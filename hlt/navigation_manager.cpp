@@ -109,7 +109,7 @@ void NavigationManager::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		else if (moves_queue[ship].size() == 2)
 		{
 			Direction second_direction = moves_queue[ship][1];
-			Position second_position = ship->position.directional_offset(second_direction);
+			Position second_position = game.game_map->directional_offset(ship->position, second_direction);
 
 			if (position_collides_with_existing(ship, second_position))
 			{
@@ -128,10 +128,10 @@ void NavigationManager::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		else
 		{
 			Direction first_direction = moves_queue[ship][0];
-			Direction perpendicular_direction_left = Position::perpendicular_direction_left(first_direction);
-			Direction perpendicular_direction_right = Position::perpendicular_direction_right(first_direction);
-			Position perpendicular_position_left = ship->position.directional_offset(perpendicular_direction_left);
-			Position perpendicular_position_right = ship->position.directional_offset(perpendicular_direction_right);
+			Direction perpendicular_direction_left = get_perpendicular_direction_left(first_direction);
+			Direction perpendicular_direction_right = get_perpendicular_direction_right(first_direction);
+			Position perpendicular_position_left = game.game_map->directional_offset(ship->position, perpendicular_direction_left);
+			Position perpendicular_position_right = game.game_map->directional_offset(ship->position, perpendicular_direction_right);
 
 			if (!position_collides_with_existing(ship, perpendicular_position_left))
 			{
@@ -168,7 +168,7 @@ void NavigationManager::fill_positions_next_turn(const unordered_map<shared_ptr<
 
 		if ((ship_move.second.size() > 0) && (ship->halite >= ceil(0.1 * game.game_map->at(ship)->halite)))
 			// either no move or can't move for lack of resource
-			positions_next_turn[ship] = ship->position.directional_offset(ship_move.second[0]);
+			positions_next_turn[ship] = game.game_map->directional_offset(ship->position, ship_move.second[0]);
 		else
 			// or move
 			positions_next_turn[ship] = ship->position;

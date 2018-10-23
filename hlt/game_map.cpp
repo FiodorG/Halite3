@@ -14,7 +14,7 @@ double GameMap::scoring_function(const MapCell& source_cell, const MapCell& targ
 	if (target_cell.halite < 40)
 		return -DBL_MAX;
 
-	// Enemy on cell
+	// Enemy on cell, do this only if it's close enough
 	if (game.enemy_in_cell(target_cell))
 		return -DBL_MAX;
 
@@ -50,7 +50,7 @@ MapCell* GameMap::closest_cell_with_ressource(const Entity& entity, const Game& 
 	return optimal_cell;
 }
 
-void GameMap::_update() 
+void GameMap::_update()
 {
     for (int y = 0; y < height; ++y) 
 		for (int x = 0; x < width; ++x)

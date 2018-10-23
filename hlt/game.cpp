@@ -2,8 +2,10 @@
 #include "input.hpp"
 
 #include <sstream>
+#include <ctime>
 
-hlt::Game::Game() : turn_number(0) 
+hlt::Game::Game() : 
+	turn_number(0) 
 {
     std::ios_base::sync_with_stdio(false);
 
@@ -16,13 +18,13 @@ hlt::Game::Game() : turn_number(0)
     log::open(my_id);
 
     for (int i = 0; i < num_players; ++i) 
-	{
         players.push_back(Player::_generate());
-    }
+    
     me = players[my_id];
     game_map = GameMap::_generate();
 
 	navigation_manager = make_unique<NavigationManager>();
+	game_grid = GameGrid(game_map->width);
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
@@ -33,9 +35,13 @@ void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
 
 void hlt::Game::update_frame() 
 {
+	start = clock();
     hlt::get_sstream() >> turn_number;
     log::log("=============== TURN " + std::to_string(turn_number) + " ================");
 
+	// Any extra info in game, gamemap, mapcells, shipyard will stay over next turn
+
+	// Update players: get new halite, recreate all new ships & dropoffs
     for (size_t i = 0; i < players.size(); ++i) 
 	{
         PlayerId current_player_id;
@@ -47,8 +53,10 @@ void hlt::Game::update_frame()
         players[current_player_id]->_update(num_ships, num_dropoffs, halite);
     }
 
+	// Reset halite on each cell and empty cells
     game_map->_update();
 
+	// Add ships, shipyard and dropoffs to cells
     for (const auto& player : players) 
 	{
         for (auto& ship_iterator : player->ships) 
@@ -57,8 +65,7 @@ void hlt::Game::update_frame()
             game_map->at(ship)->mark_unsafe(ship);
         }
 
-        game_map->at(player->shipyard)->structure = player->shipyard;
-		player->shipyard->reset_assigned_ships();
+        game_map->at(player->shipyard)->structure = player->shipyard; // Shipyard never flushed
 
         for (auto& dropoff_iterator : player->dropoffs) 
 		{

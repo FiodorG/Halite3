@@ -38,6 +38,42 @@ namespace hlt
             return at(entity->position);
         }
 
+		Position directional_offset(const Position& position, Direction d) const
+		{
+			int dx = 0;
+			int dy = 0;
+			switch (d)
+			{
+			case Direction::NORTH:
+				dy = -1;
+				break;
+			case Direction::SOUTH:
+				dy = 1;
+				break;
+			case Direction::EAST:
+				dx = 1;
+				break;
+			case Direction::WEST:
+				dx = -1;
+				break;
+			case Direction::STILL:
+				break;
+			default:
+				log::log(string("Error: invert_direction: unknown direction ") + static_cast<char>(d));
+				exit(1);
+			}
+
+			//if (new_x < 0) new_x = width + new_x;
+			//if (new_y < 0) new_y = height + new_y;
+			//if (new_x >= width) new_x = width - new_x;
+			//if (new_y >= height) new_y = height - new_y;
+
+			int new_x = position.x + dx;
+			int new_y = position.y + dy;
+
+			return Position(((new_x % width) + width) % width, ((new_y % height) + height) % height);
+		}
+
 		Position normalize(const Position& position)
 		{
 			const int x = ((position.x % width) + width) % width;
@@ -100,7 +136,7 @@ namespace hlt
 		{
 			for (auto direction : get_unsafe_moves(ship->position, destination))
 			{
-				Position target_pos = ship->position.directional_offset(direction);
+				Position target_pos = directional_offset(ship->position, direction);
 				if (!at(target_pos)->is_occupied())
 				{
 					at(target_pos)->mark_unsafe(ship);

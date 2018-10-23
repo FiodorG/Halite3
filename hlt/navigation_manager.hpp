@@ -14,22 +14,25 @@ using namespace std;
 namespace hlt
 {
 	struct Game;
-	struct NavigationManager
+	class NavigationManager
 	{
+		private:
 		unordered_map<shared_ptr<Ship>, Position> positions_next_turn;
 		unordered_map<shared_ptr<Ship>, Position> positions_enemies;
 
+		public:
 		NavigationManager() {}
 
-		bool shipyard_occupied_next_turn(const Shipyard& shipyard)
+		bool position_occupied_next_turn(const Position& position)
 		{
 			for (auto& ship_position : positions_next_turn)
-				if (ship_position.second == shipyard.position)
+				if (ship_position.second == position)
 					return true;
 
 			return false;
 		}
 
+		// Move Resolve
 		unordered_map<shared_ptr<Ship>, Position> find_any_collisions(const Game& game);
 		unordered_map<shared_ptr<Ship>, Position> find_any_enemy_collisions(const Game& game);
 		bool position_collides_with_existing(shared_ptr<Ship> ship, const Position& position);

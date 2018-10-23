@@ -4,6 +4,7 @@
 #include "player.hpp"
 #include "types.hpp"
 #include "navigation_manager.hpp"
+#include "game_grid.hpp"
 #include "log.hpp"
 
 #include <vector>
@@ -21,10 +22,14 @@ namespace hlt
         shared_ptr<Player> me;
         unique_ptr<GameMap> game_map;
 
+		// For timer
+		clock_t start;
+
+		// Movement management
+		unique_ptr<NavigationManager> navigation_manager;
 		unordered_map<shared_ptr<Ship>, vector<Direction>> moves_queue;
 		vector<Command> command_queue;
-
-		unique_ptr<NavigationManager> navigation_manager;
+		GameGrid game_grid;
 
 		Game();
 
@@ -67,25 +72,44 @@ namespace hlt
 			return me->shipyard->position;
 		}
 
+		int my_ships_number() const
+		{
+			return me->ships.size();
+		}
+
 		int max_allowed_ships() const
 		{
+			int allowed_ships = 0;
 			switch (game_map->width)
 			{
 				case 32:
-					return 25;
+					allowed_ships = 24 - players.size();
+					break;
 				case 40:
-					return 29;
+					allowed_ships = 28 - players.size();
+					break;
 				case 48:
-					return 33;
+					allowed_ships = 32 - players.size();
+					break;
 				case 56:
-					return 37;
+					allowed_ships = 36 - players.size();
+					break;
 				case 64:
-					return 40;
+					allowed_ships = 40 - players.size();
+					break;
 				default:
 					log::log("Unknown map width");
 					exit(1);
 			}
+
+			return allowed_ships;
 		}
+
+		Position compute_shortest_path(const Position& source_position, const Position& target_position) const
+		{
+			return game_grid.compute_shortest_path(source_position, target_position, *this);
+		}
+
 
 		/* Logging */
 		void log_start_turn()
@@ -117,7 +141,7 @@ namespace hlt
 				log::log(ship_iterator.second->to_string_ship());
 
 			// Log all ships assigned to my shipyard
-			log::log("Ships assigned to shipyard: " + to_string(me->shipyard->n_assigned_ships));
+			log::log("Number of ships: " + to_string(my_ships_number()));
 
 			// Log all predicted direction
 			for (auto& ship_direction : moves_queue)
@@ -133,6 +157,7 @@ namespace hlt
 			for (auto& command: command_queue)
 				log::log(command);
 
+			log::log("Time taken: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
 			log::log("");
 		}
 
