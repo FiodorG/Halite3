@@ -22,10 +22,7 @@ namespace hlt
         bool operator==(const Position& other) const { return x == other.x && y == other.y; }
         bool operator!=(const Position& other) const { return x != other.x || y != other.y; }
 
-		string to_string_position() const
-		{
-			return "(" + to_string(x) + "," + to_string(y) + ")";
-		}
+		string to_string_position() const { return "(" + to_string(x) + "," + to_string(y) + ")"; }
     };
 
     static ostream& operator<<(ostream& out, const Position& position) 
@@ -47,7 +44,7 @@ namespace std
 	{
         size_t operator()(const hlt::Position& position) const 
 		{
-            return ((position.x+position.y) * (position.x+position.y+1) / 2) + position.y;
+            return ((position.x + position.y) * (position.x+position.y + 1) / 2) + position.y;
         }
     };
 }

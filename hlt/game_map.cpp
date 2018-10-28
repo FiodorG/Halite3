@@ -4,41 +4,42 @@
 
 #include <cfloat>
 #include <limits>
+#include <cmath>
 
 using namespace hlt;
 using namespace std;
 
-double GameMap::scoring_function(const MapCell& source_cell, const MapCell& target_cell, const Game& game)
+double GameMap::scoring_function(MapCell* source_cell, MapCell* target_cell, const Game& game)
 {
-	// Too low ressource on cell
-	if (target_cell.halite < 40)
+	int distance = calculate_distance(target_cell->position, source_cell->position);
+
+	// Enemy on cell
+	if ((distance < 5) && game.enemy_in_adjacent_cell(target_cell->position))
 		return -DBL_MAX;
 
-	// Enemy on cell, do this only if it's close enough
-	if (game.enemy_in_cell(target_cell))
+	// Ally on cell
+	if ((distance < 3) && game.ally_in_cell(target_cell->position))
 		return -DBL_MAX;
 
-	int distance = calculate_distance(target_cell.position, source_cell.position);
-	int d_halite = target_cell.halite - source_cell.halite;
+	int halite = target_cell->halite;
+	if (halite < 40)
+		halite = (int)((double)halite * 0.1);
 
-	if (d_halite > 0)
-		return (double)d_halite / (1 + distance) / (1 + distance);
-	else
-		return (double)d_halite;
+	return halite / pow((double)(1 + distance), 2.0 - game.turn_percent() * 1.5 );
 }
 
-MapCell* GameMap::closest_cell_with_ressource(const Entity& entity, const Game& game)
+MapCell* GameMap::closest_cell_with_ressource(shared_ptr<Ship> ship, const Game& game)
 {
-	MapCell* optimal_cell = at(entity.position);
-	double optimal_score = scoring_function(*at(entity.position), *at(entity.position), game);
+	MapCell* optimal_cell = at(ship->position);
+	double optimal_score = scoring_function(optimal_cell, optimal_cell, game);
 	double new_score = 0;
 
 	for (vector<MapCell>& row : cells)
 		for (MapCell& cell : row)
 		{
-			if (!game.existing_objective_to_cell(cell))
+			if (!game.existing_objective_to_cell(cell) && (cell.position != ship->position))
 			{
-				new_score = scoring_function(*at(entity.position), cell, game);
+				new_score = scoring_function(at(ship->position), &cell, game);
 				if (optimal_score < new_score)
 				{
 					optimal_cell = &cell;
@@ -47,6 +48,7 @@ MapCell* GameMap::closest_cell_with_ressource(const Entity& entity, const Game& 
 			}
 		}
 
+	log::log(ship->to_string_ship() + " allocated to " + optimal_cell->position.to_string_position() + " with score " + to_string(optimal_score));
 	return optimal_cell;
 }
 

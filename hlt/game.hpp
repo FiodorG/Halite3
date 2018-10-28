@@ -3,12 +3,13 @@
 #include "game_map.hpp"
 #include "player.hpp"
 #include "types.hpp"
-#include "navigation_manager.hpp"
-#include "game_grid.hpp"
+#include "collision_resolver.hpp"
+#include "pathfinder.hpp"
 #include "log.hpp"
 
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -26,17 +27,22 @@ namespace hlt
 		clock_t start;
 
 		// Movement management
-		unique_ptr<NavigationManager> navigation_manager;
-		unordered_map<shared_ptr<Ship>, vector<Direction>> moves_queue;
+		unique_ptr<CollisionResolver> collision_resolver;
+		PathFinder pathfinder;
+
+		unordered_map<shared_ptr<Ship>, Position> positions_next_turn;
 		vector<Command> command_queue;
-		GameGrid game_grid;
+
+		// Scoring
+		vector<vector<int>> grid_score;
 
 		Game();
 
 		void resolve_moves()
 		{
 			log::log("Resolving moves");
-			command_queue = navigation_manager->resolve_moves(moves_queue, *this);
+
+			command_queue = collision_resolver->resolve_moves(*this);
 		}
 
 		bool existing_objective_to_cell(const MapCell& cell) const
@@ -52,62 +58,98 @@ namespace hlt
 			return false;
 		}
 
-		bool enemy_in_cell(const MapCell& cell) const
+		void assign_ship_to_target_position(shared_ptr<Ship> ship)
 		{
-			return cell.is_occupied_by_enemy(my_id);
+			ship->set_assigned();
+
+			if (ship->halite >= ceil(0.1 * game_map->at(ship)->halite))
+			{
+				// Enough halite to move
+				log::log("Assigning: " + ship->to_string_ship());
+				
+				Position target_position = pathfinder.compute_shortest_path(ship->position, ship->target_position(), *this);
+				update_ship_target_position(ship, target_position);
+			}
+			else
+			{
+				// Not enough halite to move
+				log::log("Staying still: " + ship->to_string_ship());
+
+				update_ship_target_position(ship, ship->position);
+			}
+		}
+		void update_ship_target_position(shared_ptr<Ship> ship, const Position& position)
+		{
+			if (positions_next_turn.count(ship))
+				flush_grid_score(positions_next_turn[ship]);
+
+			positions_next_turn[ship] = position;
+			add_self_ships_to_grid_score(ship, position);
 		}
 
-		bool enemy_in_cell(const Position& position) const
-		{
-			return game_map->at(position)->is_occupied_by_enemy(my_id);
-		}
-
-		int turns_remaining() const
-		{
-			return constants::MAX_TURNS - turn_number;
-		}
-
-		Position my_shipyard_position() const
-		{
-			return me->shipyard->position;
-		}
-
-		int my_ships_number() const
-		{
-			return me->ships.size();
-		}
+		void update_grid_score();
+		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
+		void flush_grid_score(const Position& position);
+		int get_grid_score(const Position& position) const { return grid_score[position.y][position.x]; }
 
 		int max_allowed_ships() const
 		{
 			int allowed_ships = 0;
 			switch (game_map->width)
 			{
-				case 32:
-					allowed_ships = 24 - players.size();
-					break;
-				case 40:
-					allowed_ships = 28 - players.size();
-					break;
-				case 48:
-					allowed_ships = 32 - players.size();
-					break;
-				case 56:
-					allowed_ships = 36 - players.size();
-					break;
-				case 64:
-					allowed_ships = 40 - players.size();
-					break;
-				default:
-					log::log("Unknown map width");
-					exit(1);
+			case 32:
+				allowed_ships = 24 - players.size();
+				break;
+			case 40:
+				allowed_ships = 28 - players.size();
+				break;
+			case 48:
+				allowed_ships = 32 - players.size();
+				break;
+			case 56:
+				allowed_ships = 36 - players.size();
+				break;
+			case 64:
+				allowed_ships = 40 - players.size();
+				break;
+			default:
+				log::log("Unknown map width");
+				exit(1);
 			}
 
 			return allowed_ships;
 		}
 
-		Position compute_shortest_path(const Position& source_position, const Position& target_position) const
+		void fudge_ship_if_base_blocked();
+
+		/* Utilities */
+		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
+		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
+		bool enemy_in_adjacent_cell(const Position& position) const
+		{ 
+			return
+				game_map->at(game_map->directional_offset(position, Direction::NORTH))->is_occupied_by_enemy(my_id) ||
+				game_map->at(game_map->directional_offset(position, Direction::SOUTH))->is_occupied_by_enemy(my_id) ||
+				game_map->at(game_map->directional_offset(position, Direction::EAST))->is_occupied_by_enemy(my_id) ||
+				game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id);
+		}
+		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
+
+		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
+		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
+		double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
+		int my_ships_number() const { return me->ships.size(); }
+
+		Position my_shipyard_position() const { return me->shipyard->position; }
+		shared_ptr<Ship> ship_on_shipyard() const { return game_map->at(my_shipyard_position())->ship; }
+
+		bool position_occupied_next_turn(const Position& position)
 		{
-			return game_grid.compute_shortest_path(source_position, target_position, *this);
+			for (auto& ship_position : positions_next_turn)
+				if (ship_position.second == position)
+					return true;
+
+			return false;
 		}
 
 
@@ -117,9 +159,9 @@ namespace hlt
 			log::log("START TURN");
 
 			// Log all player's ships
-			log::log("Ships:");
-			for (auto& ship_iterator : me->ships)
-				log::log(ship_iterator.second->to_string_ship());
+			//log::log("Ships:");
+			//for (auto& ship_iterator : me->ships)
+			//	log::log(ship_iterator.second->to_string_ship());
 
 			// Log all enemys ships
 			//log::log("Enemy ships:");
@@ -128,7 +170,7 @@ namespace hlt
 			//		if (cell.is_occupied_by_enemy(me->id))
 			//			log::log(cell.ship->to_string_ship());
 
-			log::log("");
+			//log::log("");
 		}
 
 		void log_end_turn()
@@ -136,31 +178,21 @@ namespace hlt
 			log::log("END TURN");
 
 			// Log all player's ships
-			log::log("Ships:");
-			for(auto& ship_iterator : me->ships)
-				log::log(ship_iterator.second->to_string_ship());
-
-			// Log all ships assigned to my shipyard
-			log::log("Number of ships: " + to_string(my_ships_number()));
-
-			// Log all predicted direction
-			for (auto& ship_direction : moves_queue)
-			{
-				string log_moves = ship_direction.first->to_string_ship() + " moving to ";
-				for (Direction& direction : ship_direction.second)
-					log_moves += static_cast<char>(direction);
-				
-				log::log(log_moves);
-			}
+			//log::log("Ships(" + to_string(my_ships_number()) + "):");
+			//for(auto& ship_iterator : me->ships)
+			//	log::log(ship_iterator.second->to_string_ship());
 		
+			// Log all predicted direction
+			for (auto& ship_position : positions_next_turn)
+				log::log(ship_position.first->to_string_ship() + " moving to " + ship_position.second.to_string_position());
+
 			// Log all commands
-			for (auto& command: command_queue)
-				log::log(command);
+			//for (auto& command: command_queue)
+			//	log::log(command);
 
 			log::log("Time taken: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
 			log::log("");
 		}
-
 
 		/* functions for new turn */
         void ready(const string& name, unsigned int rng_seed);

@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	/* End Warmup */
     game.ready("MyCppBot", rng_seed);
 
-    for (;;) 
+    while(true)
 	{
 		game.update_frame();
 		game.log_start_turn();
@@ -31,50 +31,83 @@ int main(int argc, char* argv[])
         unique_ptr<GameMap>& game_map = game.game_map;
 		shared_ptr<Shipyard> shipyard = game.me->shipyard;
 
+		/* 
+		Update SUICIDE_ON_BASE
+		**********************
+		No ordering here, all RTBing ships are equal
+		*/
+		for (const auto& ship_iterator : game.me->ships)
+		{
+			shared_ptr<Ship> ship = ship_iterator.second;
+
+			if (ship->assigned)
+				continue;
+
+			if (2 * game_map->calculate_distance(ship->position, shipyard->position) >= game.turns_remaining())
+				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::SUICIDE_ON_BASE, shipyard->position)));
+
+			if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
+				game.assign_ship_to_target_position(ship);
+		}
+
+		/* 
+		Update RETURN_TO_BASE
+		**********************
+		No ordering here, all RTBing ships are equal
+		*/
+		for (const auto& ship_iterator : game.me->ships)
+		{
+			shared_ptr<Ship> ship = ship_iterator.second;
+
+			if (ship->assigned)
+				continue;
+
+			if (ship->is_objective(Objective_Type::BACK_TO_BASE) && (ship->position == shipyard->position))
+				ship->clear_objective();
+
+			if (ship->is_objective(Objective_Type::EXTRACT) && ship->is_full(0.9))
+				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::BACK_TO_BASE, shipyard->position)));
+
+			if (ship->is_objective(Objective_Type::BACK_TO_BASE))
+				game.assign_ship_to_target_position(ship);
+		}
+
+		/*
+		Update EXTRACT
+		**********************
+		Ordering in halite cargo - fullest ships have priority (todo)
+		*/
         for (const auto& ship_iterator : game.me->ships)
 		{
             shared_ptr<Ship> ship = ship_iterator.second;
 
-			shipyard->assign_ship(ship);
-
-			// Update objectives from last turn
-			if (2 * game_map->calculate_distance(ship->position, shipyard->position) > game.turns_remaining())
-				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::SUICIDE_ON_BASE, shipyard->position)));
-			
-			if (ship->is_objective(Objective_Type::BACK_TO_BASE) && (ship->position == shipyard->position))
-				ship->clear_objective();
+			if (ship->assigned)
+				continue;
 
 			if (ship->is_objective(Objective_Type::EXTRACT) && (ship->position == ship->target_position()) && (game_map->at(ship->target_position())->halite < 40))
 				ship->clear_objective();
 
-			if (ship->is_objective(Objective_Type::EXTRACT) && (game.enemy_in_cell(ship->target_position())))
+			if (ship->is_objective(Objective_Type::EXTRACT) && (game.enemy_in_adjacent_cell(ship->target_position())))
 				ship->clear_objective();
 
-			if (ship->is_objective(Objective_Type::EXTRACT) && ship->is_full())
-				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::BACK_TO_BASE, shipyard->position)));
-
-			// Act on existing objectives
-            if (ship->has_objective())
+			if(!ship->has_objective())
 			{
-				game.moves_queue[ship] = game_map->navigate(ship, ship->target_position());
-			}
-			// Or create new one
-			else
-			{
-				MapCell* target_position = game_map->closest_cell_with_ressource(*ship, game);
+				MapCell* target_position = game_map->closest_cell_with_ressource(ship, game);
 				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::EXTRACT, target_position->position)));
-
-				game.moves_queue[ship] = game_map->navigate(ship, target_position->position);
 			}
+
+			if (ship->is_objective(Objective_Type::EXTRACT))
+				game.assign_ship_to_target_position(ship);
         }
 
+		game.fudge_ship_if_base_blocked();
 		game.resolve_moves();
 
         if (
-			game.turns_remaining() >= 40 &&
+			game.turns_remaining_percent() >= 0.25 &&
 			game.me->halite >= constants::SHIP_COST &&
-			!game.navigation_manager->shipyard_occupied_next_turn(*game.me->shipyard) && 
-			shipyard->n_assigned_ships < game.max_allowed_ships()
+			!game.position_occupied_next_turn(game.my_shipyard_position()) &&
+			game.my_ships_number() < game.max_allowed_ships()
 		)
 			game.command_queue.push_back(game.me->shipyard->spawn());
 			
