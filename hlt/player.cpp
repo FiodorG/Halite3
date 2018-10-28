@@ -1,5 +1,6 @@
 #include "player.hpp"
 #include "input.hpp"
+#include "priority_queue.hpp"
 
 using namespace hlt;
 using namespace std;
@@ -8,6 +9,7 @@ void Player::_update(int num_ships, int num_dropoffs, Halite halite)
 {
     this->halite = halite;
 
+	// Regenerate ships, but keep objectives
 	unordered_map<EntityId, shared_ptr<Ship>> old_ships = ships;
 
     ships.clear();
@@ -25,12 +27,22 @@ void Player::_update(int num_ships, int num_dropoffs, Halite halite)
     }
 	old_ships.clear();
 
+	// Regenerate dropoffs
     dropoffs.clear();
     for (int i = 0; i < num_dropoffs; ++i) 
 	{
         shared_ptr<Dropoff> dropoff = Dropoff::_generate(id);
         dropoffs[dropoff->id] = dropoff;
     }
+
+	// Have ship in order of halite
+	PriorityQueue<shared_ptr<Ship>, int> ships_in_priority;
+	for (const auto& ship_iterator : ships)
+		ships_in_priority.put(ship_iterator.second, ship_iterator.second->halite);
+
+	ships_ordered.clear();
+	while (!ships_in_priority.empty())
+		ships_ordered.push_front(ships_in_priority.get());
 }
 
 shared_ptr<Player> Player::_generate() 

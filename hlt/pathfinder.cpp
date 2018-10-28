@@ -95,7 +95,7 @@ vector<MapCell*> PathFinder::dijkstra(MapCell* source_cell, MapCell* target_cell
 	unordered_map<MapCell*, MapCell*> came_from;
 	came_from[source_cell] = source_cell;
 
-	PriorityQueue frontier;
+	PriorityQueue<MapCell*, int> frontier;
 	frontier.put(source_cell, 0);
 
 	unordered_map<MapCell*, int> cost_so_far;

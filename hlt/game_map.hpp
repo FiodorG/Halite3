@@ -11,21 +11,21 @@ using namespace std;
 namespace hlt 
 {
 	struct Game;
-    struct GameMap 
+	struct GameMap
 	{
-        int width;
-        int height;
-        vector<vector<MapCell>> cells;
+		int width;
+		int height;
+		vector<vector<MapCell>> cells;
 
-        MapCell* at(const Position& position) 
+		MapCell* at(const Position& position)
 		{
-            Position normalized = normalize(position);
-            return &cells[normalized.y][normalized.x];
-        }
+			Position normalized = normalize(position);
+			return &cells[normalized.y][normalized.x];
+		}
 
-        MapCell* at(const Entity& entity) { return at(entity.position); }
-        MapCell* at(const Entity* entity) { return at(entity->position); }
-        MapCell* at(const shared_ptr<Entity>& entity) { return at(entity->position); }
+		MapCell* at(const Entity& entity) { return at(entity.position); }
+		MapCell* at(const Entity* entity) { return at(entity->position); }
+		MapCell* at(const shared_ptr<Entity>& entity) { return at(entity->position); }
 
 		Position directional_offset(const Position& position, Direction d) const
 		{
@@ -136,6 +136,11 @@ namespace hlt
 		{
 			// Move resource checking here
 			return get_unsafe_moves(ship->position, destination);
+		}
+
+		bool ship_can_move(shared_ptr<Ship> ship)
+		{
+			return ship->halite >= (int)floor(0.1 * at(ship)->halite);
 		}
 
 		double scoring_function(MapCell* source_cell, MapCell* target_cell, const Game& game);

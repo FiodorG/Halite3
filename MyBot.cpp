@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     Game game;
     /* Warmup */
 	/* End Warmup */
-    game.ready("MyCppBot", rng_seed);
+    game.ready("GSBot", rng_seed);
 
     while(true)
 	{
@@ -34,17 +34,14 @@ int main(int argc, char* argv[])
 		/* 
 		Update SUICIDE_ON_BASE
 		**********************
-		No ordering here, all RTBing ships are equal
 		*/
-		for (const auto& ship_iterator : game.me->ships)
+		for (const shared_ptr<Ship>& ship : game.me->ships_ordered)
 		{
-			shared_ptr<Ship> ship = ship_iterator.second;
-
 			if (ship->assigned)
 				continue;
 
 			if (2 * game_map->calculate_distance(ship->position, shipyard->position) >= game.turns_remaining())
-				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::SUICIDE_ON_BASE, shipyard->position)));
+				ship->assign_objective(Objective_Type::SUICIDE_ON_BASE, shipyard->position);
 
 			if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
 				game.assign_ship_to_target_position(ship);
@@ -53,12 +50,9 @@ int main(int argc, char* argv[])
 		/* 
 		Update RETURN_TO_BASE
 		**********************
-		No ordering here, all RTBing ships are equal
 		*/
-		for (const auto& ship_iterator : game.me->ships)
+		for (const shared_ptr<Ship>& ship : game.me->ships_ordered)
 		{
-			shared_ptr<Ship> ship = ship_iterator.second;
-
 			if (ship->assigned)
 				continue;
 
@@ -66,7 +60,7 @@ int main(int argc, char* argv[])
 				ship->clear_objective();
 
 			if (ship->is_objective(Objective_Type::EXTRACT) && ship->is_full(0.9))
-				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::BACK_TO_BASE, shipyard->position)));
+				ship->assign_objective(Objective_Type::BACK_TO_BASE, shipyard->position);
 
 			if (ship->is_objective(Objective_Type::BACK_TO_BASE))
 				game.assign_ship_to_target_position(ship);
@@ -77,10 +71,8 @@ int main(int argc, char* argv[])
 		**********************
 		Ordering in halite cargo - fullest ships have priority (todo)
 		*/
-        for (const auto& ship_iterator : game.me->ships)
+		for (const shared_ptr<Ship>& ship : game.me->ships_ordered)
 		{
-            shared_ptr<Ship> ship = ship_iterator.second;
-
 			if (ship->assigned)
 				continue;
 
@@ -93,7 +85,7 @@ int main(int argc, char* argv[])
 			if(!ship->has_objective())
 			{
 				MapCell* target_position = game_map->closest_cell_with_ressource(ship, game);
-				ship->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::EXTRACT, target_position->position)));
+				ship->assign_objective(Objective_Type::EXTRACT, target_position->position);
 			}
 
 			if (ship->is_objective(Objective_Type::EXTRACT))
@@ -103,14 +95,7 @@ int main(int argc, char* argv[])
 		game.fudge_ship_if_base_blocked();
 		game.resolve_moves();
 
-        if (
-			game.turns_remaining_percent() >= 0.25 &&
-			game.me->halite >= constants::SHIP_COST &&
-			!game.position_occupied_next_turn(game.my_shipyard_position()) &&
-			game.my_ships_number() < game.max_allowed_ships()
-		)
-			game.command_queue.push_back(game.me->shipyard->spawn());
-			
+		game.generate_new_ships();
 		game.log_end_turn();
 
         if (!game.end_turn(game.command_queue))

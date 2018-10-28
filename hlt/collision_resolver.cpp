@@ -1,5 +1,6 @@
 #include "collision_resolver.hpp"
 #include "game.hpp"
+#include "priority_queue.hpp"
 
 #include <vector>
 #include <unordered_map>
@@ -114,17 +115,24 @@ Try to change the move of the first ship in the collision tuple that moves. No i
 */
 void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position> collisions, Game& game)
 {
-	log::log("Collisions:");
-	for (auto& ship_position : collisions)
-		log::log(ship_position.first->to_string_ship() + " moving to " + ship_position.second.to_string_position());
+	// First order ships/positions in increasing order of halite
+	PriorityQueue<shared_ptr<Ship>, int> ships_in_priority;
+	for (auto& ship_iterator : collisions)
+		ships_in_priority.put(ship_iterator.first, ship_iterator.first->halite);
 
-	// here also sort by decreasing order of halite
+	list<shared_ptr<Ship>> collisions_ordered;
+	while (!ships_in_priority.empty())
+		collisions_ordered.push_back(ships_in_priority.get());
+
+	log::log("Collisions:");
+	for (auto& ship : collisions_ordered)
+		log::log(ship->to_string_ship() + " moving to " + collisions[ship].to_string_position());
+	log::log("");
 
 	// We try to edit the first ship that comes up, no order.
-	for (auto& ship_position : collisions)
+	for (auto& ship : collisions_ordered)
 	{
-		shared_ptr<Ship> ship = ship_position.first;
-		Position new_position = ship_position.second;
+		Position new_position = collisions[ship];
 
 		// If not own ship, continue
 		if (ship->owner != game.my_id)
@@ -165,9 +173,63 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 	}
 }
 
+/*
+Third pass to exchange two immobilized ships if doing so will both make them get closer to their target
+*/
 void CollisionResolver::exchange_ships(Game& game)
 {
+	unordered_map<EntityId, shared_ptr<Ship>> ships_selected;
+	list<tuple<shared_ptr<Ship>, shared_ptr<Ship>>> ships_to_switch;
 
+	// Select ships which can be exchanged so that they get closer to their targets
+	for (auto& ship_position1 : game.positions_next_turn)
+	{
+		shared_ptr<Ship> ship1 = ship_position1.first;
+
+		for (auto& ship_position2 : game.positions_next_turn)
+		{
+			shared_ptr<Ship> ship2 = ship_position2.first;
+
+			if (
+				(game.game_map->calculate_distance(ship1->position, ship2->position) == 1) && // ships are contiguous
+				game.game_map->ship_can_move(ship1) && // ship1 can move
+				game.game_map->ship_can_move(ship2) && // ship2 can move
+				!ships_selected.count(ship1->id) && // ship1 not already selected
+				!ships_selected.count(ship2->id) && // ship2 not already selected
+				!ship1->is_at_objective() &&  // ship1 not at objective 
+				!ship2->is_at_objective() &&  // ship2 not at objective
+				(ship_position1.second == ship1->position) && // ship1 immobilized
+				(ship_position2.second == ship2->position)    // ship2 immobilized
+				)
+			{
+				int ship1_distance_to_objective = game.game_map->calculate_distance(ship1->target_position(), ship1->position);
+				int ship2_distance_to_objective = game.game_map->calculate_distance(ship2->target_position(), ship2->position);
+
+				if (
+					(game.game_map->calculate_distance(ship1->target_position(), ship2->position) < ship1_distance_to_objective) && // ship1 target is closer from ship2 position
+					(game.game_map->calculate_distance(ship2->target_position(), ship1->position) < ship2_distance_to_objective)    // ship2 target is closer from ship1 position
+					)
+				{
+					ships_selected[ship1->id] = ship1;
+					ships_selected[ship2->id] = ship2;
+
+					ships_to_switch.push_back(make_tuple(ship1, ship2));
+
+					goto endinnerloop;
+				}
+			}	
+		}
+
+	endinnerloop:;
+	}
+
+	// Invert their positions
+	for (auto& ships_tuple : ships_to_switch)
+	{
+		log::log("Exchanging " + get<0>(ships_tuple)->to_string_ship() + " and " + get<1>(ships_tuple)->to_string_ship());
+		game.positions_next_turn[get<0>(ships_tuple)] = get<1>(ships_tuple)->position;
+		game.positions_next_turn[get<1>(ships_tuple)] = get<0>(ships_tuple)->position;
+	}
 }
 
 /*
@@ -212,7 +274,13 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 	// Generate Command vector
 	for (auto& ship_position : game.positions_next_turn)
 	{
-		Direction direction = game.game_map->get_unsafe_moves(ship_position.first->position, ship_position.second)[0];
+		if (game.game_map->calculate_distance(ship_position.first->position, ship_position.second) > 1)
+		{
+			log::log("Error: target position too far");
+			exit(1);
+		}
+
+		Direction direction = game.game_map->get_move(ship_position.first->position, ship_position.second);
 		resolved_moves.push_back(ship_position.first->move(direction));
 	}
 
