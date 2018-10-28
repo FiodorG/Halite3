@@ -23,9 +23,13 @@ namespace hlt
 
 		void set_assigned() { this->assigned = true; }
         bool is_full(double percentage = 1.0) const { return halite >= percentage * constants::MAX_HALITE; }
-		void assign_objective(shared_ptr<Objective> objective) { this->objective = objective; }
 		void clear_objective() { this->objective.reset(); }
 		bool has_objective() const { return static_cast<bool>(objective); }
+
+		void assign_objective(Objective_Type objective_type, const Position& position) 
+		{ 
+			this->objective = shared_ptr<Objective>(new Objective(0, objective_type, position));
+		}
 
 		void assign_objective(shared_ptr<Ship> ship)
 		{

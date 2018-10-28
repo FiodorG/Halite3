@@ -149,8 +149,8 @@ void hlt::Game::fudge_ship_if_base_blocked()
 			{
 				if (
 					(game_map->at(ship_iterator.second)->halite < min_halite) &&
-					(ship_iterator.second->position != my_shipyard_position()) && 
-					(ship_iterator.second->halite > floor(0.1 * game_map->at(ship_iterator.second)->halite))
+					(ship_iterator.second->position != my_shipyard_position()) &&
+					game_map->ship_can_move(ship_iterator.second)
 					)
 				{
 					ship_with_least_halite = ship_iterator.second;
@@ -161,13 +161,13 @@ void hlt::Game::fudge_ship_if_base_blocked()
 			// Move ship away from shipyard
 			Direction direction = invert_direction(game_map->get_move(ship_with_least_halite->position, my_shipyard_position()));
 			Position position = game_map->directional_offset(ship_with_least_halite->position, direction);
-			ship_with_least_halite->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::EXTRACT, position)));
+			ship_with_least_halite->assign_objective(Objective_Type::EXTRACT, position);
 			update_ship_target_position(ship_with_least_halite, position);
 			
 			log::log("Pushing " + ship_with_least_halite->to_string_ship());
 
 			// Ship on shipyard sent to ship moved away
-			ship_on_shipyard()->assign_objective(shared_ptr<Objective>(new Objective(0, Objective_Type::EXTRACT, ship_with_least_halite->position)));
+			ship_on_shipyard()->assign_objective(Objective_Type::EXTRACT, ship_with_least_halite->position);
 			update_ship_target_position(ship_on_shipyard(), ship_with_least_halite->position);
 
 			log::log("Pushing " + ship_on_shipyard()->to_string_ship());

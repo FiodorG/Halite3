@@ -84,7 +84,7 @@ namespace hlt
 		{
 			ship->set_assigned();
 
-			if (ship->halite >= floor(0.1 * game_map->at(ship)->halite))
+			if (game_map->ship_can_move(ship))
 			{
 				// Enough halite to move
 				log::log("Assigning: " + ship->to_string_ship());
@@ -114,11 +114,46 @@ namespace hlt
 		void flush_grid_score(const Position& position);
 		int get_grid_score(const Position& position) const { return grid_score[position.y][position.x]; }
 
+		void generate_new_ships()
+		{
+			if (
+				turns_remaining_percent() >= 0.33 &&
+				me->halite >= constants::SHIP_COST &&
+				!position_occupied_next_turn(my_shipyard_position()) &&
+				my_ships_number() < max_allowed_ships()
+				)
+				command_queue.push_back(me->shipyard->spawn());
+		}
+
 		int max_allowed_ships() const
 		{
 			// assumes ships make 5 deliveries on average
-			int number_players = min((int)players.size(), 3);
-			return (int)ceil((double)total_halite / (double)number_players / 900.0 / 5.0);
+			//int number_players = min((int)players.size(), 3);
+			//return (int)ceil((double)total_halite / (double)number_players / 900.0 / 5.0);
+
+			int allowed_ships = 0;
+			switch (game_map->width)
+			{
+			case 32:
+				allowed_ships = 24;
+				break;
+			case 40:
+				allowed_ships = 28 - players.size();
+				break;
+			case 48:
+				allowed_ships = 32 - players.size();
+				break;
+			case 56:
+				allowed_ships = 36 - players.size();
+				break;
+			case 64:
+				allowed_ships = 40 - players.size();
+				break;
+			default:
+				log::log("Unknown map width");
+				exit(1);
+			}
+			return allowed_ships;
 		}
 
 		void fudge_ship_if_base_blocked();
@@ -129,12 +164,13 @@ namespace hlt
 		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
 		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
-		{ 
+		{
 			return
 				game_map->at(game_map->directional_offset(position, Direction::NORTH))->is_occupied_by_enemy(my_id) ||
 				game_map->at(game_map->directional_offset(position, Direction::SOUTH))->is_occupied_by_enemy(my_id) ||
 				game_map->at(game_map->directional_offset(position, Direction::EAST))->is_occupied_by_enemy(my_id) ||
-				game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id);
+				game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id) ||
+				game_map->at(position)->is_occupied_by_enemy(my_id);
 		}
 		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
 
