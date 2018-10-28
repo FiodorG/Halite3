@@ -31,7 +31,10 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_coll
 	for (auto& ship_move : game.positions_next_turn)
 	{
 		for (auto& enemy_ship_move : positions_enemies)
-			if (ship_move.second == enemy_ship_move.second)
+			if (
+				(ship_move.second == enemy_ship_move.second) &&
+				!(enemy_ship_move.second != game.my_shipyard_position())
+			)
 				collisions[enemy_ship_move.first] = enemy_ship_move.second;
 
 		if (collisions.size())
@@ -162,6 +165,11 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 	}
 }
 
+void CollisionResolver::exchange_ships(Game& game)
+{
+
+}
+
 /*
 Main function to resolve moves
 */
@@ -193,11 +201,14 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 	{
 		edit_collisions(enemy_collisions, game);
 		enemy_collisions = find_any_enemy_collisions(game);
+		j++;
 
 		if (j == 50)
 			break;
 	}
 	
+	exchange_ships(game);
+
 	// Generate Command vector
 	for (auto& ship_position : game.positions_next_turn)
 	{

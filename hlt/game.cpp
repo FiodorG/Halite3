@@ -30,6 +30,11 @@ hlt::Game::Game() :
 	pathfinder = PathFinder(game_map->width);
 
 	grid_score = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
+
+	total_halite = 0;
+	for (vector<MapCell>& row : game_map->cells)
+		for (MapCell& cell : row)
+			total_halite += cell.halite;
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
