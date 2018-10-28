@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 			if (ship->assigned)
 				continue;
 
-			if (ship->is_objective(Objective_Type::EXTRACT) && (ship->position == ship->target_position()) && (game_map->at(ship->target_position())->halite < 40))
+			if (ship->is_objective(Objective_Type::EXTRACT) && (ship->position == ship->target_position()) && (game.better_neighboring_cell_exists(ship->position)))
 				ship->clear_objective();
 
 			if (ship->is_objective(Objective_Type::EXTRACT) && (game.enemy_in_adjacent_cell(ship->target_position())))
