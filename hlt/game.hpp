@@ -35,6 +35,7 @@ namespace hlt
 
 		// Scoring
 		vector<vector<int>> grid_score;
+		int total_halite;
 
 		Game();
 
@@ -61,8 +62,8 @@ namespace hlt
 		bool better_neighboring_cell_exists(const Position& position)
 		{
 			int halite = mapcell(position)->halite;
-			int halite_over_one_turn = ceil(0.25 * halite);
-			int halite_over_two_turn = halite_over_one_turn + ceil(0.25 * (halite - halite_over_one_turn));
+			int halite_over_one_turn = (int)ceil(0.25 * halite);
+			int halite_over_two_turn = halite_over_one_turn + (int)ceil(0.25 * (halite - halite_over_one_turn));
 			int north_halite = mapcell(game_map->directional_offset(position, Direction::NORTH))->halite;
 			int south_halite = mapcell(game_map->directional_offset(position, Direction::SOUTH))->halite;
 			int east_halite  = mapcell(game_map->directional_offset(position, Direction::EAST))->halite;
@@ -115,30 +116,9 @@ namespace hlt
 
 		int max_allowed_ships() const
 		{
-			int allowed_ships = 0;
-			switch (game_map->width)
-			{
-			case 32:
-				allowed_ships = 24 - players.size();
-				break;
-			case 40:
-				allowed_ships = 28 - players.size();
-				break;
-			case 48:
-				allowed_ships = 32 - players.size();
-				break;
-			case 56:
-				allowed_ships = 36 - players.size();
-				break;
-			case 64:
-				allowed_ships = 40 - players.size();
-				break;
-			default:
-				log::log("Unknown map width");
-				exit(1);
-			}
-
-			return allowed_ships;
+			// assumes ships make 5 deliveries on average
+			int number_players = min((int)players.size(), 3);
+			return (int)ceil((double)total_halite / (double)number_players / 900.0 / 5.0);
 		}
 
 		void fudge_ship_if_base_blocked();

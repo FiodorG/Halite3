@@ -29,6 +29,7 @@ namespace hlt
 		bool is_ship_switching_places(shared_ptr<Ship> ship, Game& game) const;
 		void edit_collisions(unordered_map<shared_ptr<Ship>, Position> collisions, Game& game);
 		void fill_positions_enemies(Game& game);
+		void exchange_ships(Game& game);
 		vector<Command> resolve_moves(Game& game);
 	};
 }
