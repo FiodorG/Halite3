@@ -58,11 +58,32 @@ namespace hlt
 			return false;
 		}
 
+		bool better_neighboring_cell_exists(const Position& position)
+		{
+			int halite = mapcell(position)->halite;
+			int halite_over_one_turn = ceil(0.25 * halite);
+			int halite_over_two_turn = halite_over_one_turn + ceil(0.25 * (halite - halite_over_one_turn));
+			int north_halite = mapcell(game_map->directional_offset(position, Direction::NORTH))->halite;
+			int south_halite = mapcell(game_map->directional_offset(position, Direction::SOUTH))->halite;
+			int east_halite  = mapcell(game_map->directional_offset(position, Direction::EAST))->halite;
+			int west_halite  = mapcell(game_map->directional_offset(position, Direction::WEST))->halite;
+
+			if (
+				((-floor(0.1 * halite) + ceil(0.25 * north_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * south_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * east_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * west_halite)) > halite_over_two_turn)
+			)
+				return true;
+			else
+				return false;
+		}
+
 		void assign_ship_to_target_position(shared_ptr<Ship> ship)
 		{
 			ship->set_assigned();
 
-			if (ship->halite >= ceil(0.1 * game_map->at(ship)->halite))
+			if (ship->halite >= floor(0.1 * game_map->at(ship)->halite))
 			{
 				// Enough halite to move
 				log::log("Assigning: " + ship->to_string_ship());
@@ -122,7 +143,9 @@ namespace hlt
 
 		void fudge_ship_if_base_blocked();
 
+
 		/* Utilities */
+		MapCell* mapcell(const Position& position) { return game_map->at(position); }
 		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
 		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
@@ -172,7 +195,6 @@ namespace hlt
 
 			//log::log("");
 		}
-
 		void log_end_turn()
 		{
 			log::log("END TURN");
@@ -193,6 +215,7 @@ namespace hlt
 			log::log("Time taken: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
 			log::log("");
 		}
+
 
 		/* functions for new turn */
         void ready(const string& name, unsigned int rng_seed);

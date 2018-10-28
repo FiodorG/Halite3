@@ -76,7 +76,7 @@ vector<MapCell*> PathFinder::reconstruct_path(MapCell* source_cell, MapCell* tar
 
 int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* next_cell, const Game& game) const
 {
-	int move_score = (int)ceil(0.1 * source_cell->halite);
+	int move_score = (int)floor(0.1 * source_cell->halite);
 
 	// Only apply bad score for enemies/allies if they are very close
 	if (game.game_map->calculate_distance(source_cell->position, next_cell->position)<5)
@@ -123,13 +123,6 @@ vector<MapCell*> PathFinder::dijkstra(MapCell* source_cell, MapCell* target_cell
 				frontier.put(next_cell, new_cost + heuristic(next_cell, target_cell, game));
 			}
 		}
-
-		//if (shortest_path[index_current].size())
-		//{
-		//	log::log("Shortest path of " + current_cell->position.to_string_position());
-		//	for (Position& pos : shortest_path[index_current])
-		//		log::log(pos.to_string_position());
-		//}
 	}
 
 	return vector<MapCell*>(1, source_cell);

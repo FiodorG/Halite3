@@ -145,7 +145,7 @@ void hlt::Game::fudge_ship_if_base_blocked()
 				if (
 					(game_map->at(ship_iterator.second)->halite < min_halite) &&
 					(ship_iterator.second->position != my_shipyard_position()) && 
-					(ship_iterator.second->halite > ceil(0.1 * game_map->at(ship_iterator.second)->halite))
+					(ship_iterator.second->halite > floor(0.1 * game_map->at(ship_iterator.second)->halite))
 					)
 				{
 					ship_with_least_halite = ship_iterator.second;
