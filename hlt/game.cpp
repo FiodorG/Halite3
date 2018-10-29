@@ -6,8 +6,9 @@
 #include <stdint.h>
 
 
-hlt::Game::Game() : 
-	turn_number(0) 
+hlt::Game::Game(unordered_map<string, int> constants) :
+	turn_number(0),
+	constants(constants)
 {
     std::ios_base::sync_with_stdio(false);
 
@@ -26,15 +27,16 @@ hlt::Game::Game() :
     game_map = GameMap::_generate();
 
 	// My stuff
-	collision_resolver = make_unique<CollisionResolver>();
+	dropoffs = 0;
+	collision_resolver = CollisionResolver();
+	scorer = Scorer();
 	pathfinder = PathFinder(game_map->width);
 
-	grid_score = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
-
-	total_halite = 0;
+	scorer.grid_score = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
+	scorer.total_halite = 0;
 	for (vector<MapCell>& row : game_map->cells)
 		for (MapCell& cell : row)
-			total_halite += cell.halite;
+			scorer.total_halite += cell.halite;
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
@@ -86,36 +88,7 @@ void hlt::Game::update_frame()
 
 	command_queue.clear();
 	positions_next_turn.clear();
-	update_grid_score();
-}
-
-void hlt::Game::update_grid_score()
-{
-	for (int i = 0; i < game_map->height; ++i)
-		for (int j = 0; j < game_map->width; ++j)
-		{
-			grid_score[i][j] = 0;
-
-			// If enemy is in contiguous cell, bad score. Not use UINT_MIN not to cause overflow errors.
-			if (
-				enemy_in_cell(game_map->directional_offset(Position(j, i), Direction::NORTH)) ||
-				enemy_in_cell(game_map->directional_offset(Position(j, i), Direction::SOUTH)) ||
-				enemy_in_cell(game_map->directional_offset(Position(j, i), Direction::EAST)) ||
-				enemy_in_cell(game_map->directional_offset(Position(j, i), Direction::WEST)) ||
-				game_map->cells[i][j].is_occupied_by_enemy(my_id)
-			)
-				grid_score[i][j] = 9;
-		}
-}
-
-void hlt::Game::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position)
-{
-	grid_score[position.y][position.x] += 1;
-}
-
-void hlt::Game::flush_grid_score(const Position& position)
-{
-	grid_score[position.y][position.x] = max(0, grid_score[position.y][position.x] - 1);
+	scorer.update_grid_score(*this);
 }
 
 bool hlt::Game::end_turn(const std::vector<hlt::Command>& commands) 

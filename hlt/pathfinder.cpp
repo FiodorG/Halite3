@@ -6,7 +6,7 @@
 using namespace hlt;
 using namespace std;
 
-Position PathFinder::compute_shortest_path(const Position& source_position, const Position& target_position, const Game& game) const
+Position PathFinder::compute_shortest_path(const Position& source_position, const Position& target_position, Game& game)
 {
 	if (source_position == target_position)
 		return source_position;
@@ -39,22 +39,22 @@ vector<MapCell*> PathFinder::adjacent_cells(MapCell* source_cell, MapCell* targe
 
 	Position north_position = game.game_map->directional_offset(cell->position, Direction::NORTH);
 	int north_distance = game.game_map->calculate_distance(source_cell->position, north_position);
-	if ((north_distance > 4) || (game.get_grid_score(north_position) < 9) || (north_position == target_cell->position))
+	if ((north_distance > 4) || (game.scorer.get_grid_score(north_position) < 9) || (north_position == target_cell->position))
 		adjacent_cells.push_back(game.game_map->at(north_position));
 
 	Position south_position = game.game_map->directional_offset(cell->position, Direction::SOUTH);
 	int south_distance = game.game_map->calculate_distance(source_cell->position, south_position);
-	if ((south_distance > 4) || (game.get_grid_score(south_position) < 9) || (south_position == target_cell->position))
+	if ((south_distance > 4) || (game.scorer.get_grid_score(south_position) < 9) || (south_position == target_cell->position))
 		adjacent_cells.push_back(game.game_map->at(south_position));
 
 	Position east_position = game.game_map->directional_offset(cell->position, Direction::EAST);
 	int east_distance = game.game_map->calculate_distance(source_cell->position, east_position);
-	if ((east_distance > 4) || (game.get_grid_score(east_position) < 9) || (east_position == target_cell->position))
+	if ((east_distance > 4) || (game.scorer.get_grid_score(east_position) < 9) || (east_position == target_cell->position))
 		adjacent_cells.push_back(game.game_map->at(east_position));
 
 	Position west_position = game.game_map->directional_offset(cell->position, Direction::WEST);
 	int west_distance = game.game_map->calculate_distance(source_cell->position, west_position);
-	if ((west_distance > 4) || (game.get_grid_score(west_position) < 9) || (west_position == target_cell->position))
+	if ((west_distance > 4) || (game.scorer.get_grid_score(west_position) < 9) || (west_position == target_cell->position))
 		adjacent_cells.push_back(game.game_map->at(west_position));
 
 	return adjacent_cells;
@@ -80,17 +80,17 @@ int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* next_cell
 
 	// Only apply bad score for enemies/allies if they are very close
 	if (game.game_map->calculate_distance(source_cell->position, next_cell->position)<5)
-		move_score += (game.grid_score[next_cell->position.y][next_cell->position.x]>0) * 9999999;
+		move_score += (game.scorer.grid_score[next_cell->position.y][next_cell->position.x]>0) * 9999999;
 
 	return move_score;
 }
 
-inline int PathFinder::heuristic(MapCell* cell, MapCell* target_cell, const Game& game) const
+inline int PathFinder::heuristic(MapCell* cell, MapCell* target_cell, Game& game) const
 {
-	return 100 * game.game_map->calculate_distance(cell->position, target_cell->position);
+	return game.get_constant("A* Heuristic") * game.game_map->calculate_distance(cell->position, target_cell->position);
 }
 
-vector<MapCell*> PathFinder::dijkstra(MapCell* source_cell, MapCell* target_cell, const Game& game) const
+vector<MapCell*> PathFinder::dijkstra(MapCell* source_cell, MapCell* target_cell, Game& game)
 {
 	unordered_map<MapCell*, MapCell*> came_from;
 	came_from[source_cell] = source_cell;

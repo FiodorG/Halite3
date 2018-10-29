@@ -20,7 +20,7 @@ namespace hlt
 		unordered_map<shared_ptr<Ship>, Position> positions_enemies;
 
 		public:
-			CollisionResolver() {}
+		CollisionResolver() {}
 
 		// Move Resolve
 		unordered_map<shared_ptr<Ship>, Position> find_any_collisions(const Game& game);

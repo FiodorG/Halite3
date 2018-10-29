@@ -28,12 +28,12 @@ namespace hlt
 		PathFinder(int width) : width(width) {}
 
 		// Dijkstra
-		Position compute_shortest_path(const Position& source_position, const Position& target_position, const Game& game) const;
+		Position compute_shortest_path(const Position& source_position, const Position& target_position, Game& game);
 		private:
 		static vector<MapCell*> reconstruct_path(MapCell* source_cell, MapCell* target_cell, unordered_map<MapCell*, MapCell*> came_from);
 		static vector<MapCell*> adjacent_cells(MapCell* source_cell, MapCell* target_cell, MapCell* cell, const Game& game);
-		inline int heuristic(MapCell* cell, MapCell* target_cell, const Game& game) const;
+		inline int heuristic(MapCell* cell, MapCell* target_cell, Game& game) const;
 		int compute_next_step_score(MapCell* source_cell, MapCell* next_cell, const Game& game) const;
-		vector<MapCell*> dijkstra(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
+		vector<MapCell*> dijkstra(MapCell* source_cell, MapCell* target_cell, Game& game);
 	};
 }
