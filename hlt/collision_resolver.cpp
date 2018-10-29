@@ -34,7 +34,7 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_coll
 		for (auto& enemy_ship_move : positions_enemies)
 			if (
 				(ship_move.second == enemy_ship_move.second) &&
-				!(enemy_ship_move.second != game.my_shipyard_position())
+				!game.is_shipyard_or_dropoff(enemy_ship_move.second)
 			)
 				collisions[enemy_ship_move.first] = enemy_ship_move.second;
 
@@ -62,8 +62,8 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_collisions
 				(*ship_move1.first != *ship_move2.first) &&
 				(ship_move1.second == ship_move2.second) &&
 				!(
-					(ship_move1.first->is_objective(Objective_Type::SUICIDE_ON_BASE) && (ship_move2.second == game.my_shipyard_position())) ||
-					(ship_move2.first->is_objective(Objective_Type::SUICIDE_ON_BASE) && (ship_move1.second == game.my_shipyard_position()))
+					(ship_move1.first->is_objective(Objective_Type::SUICIDE_ON_BASE) && game.is_shipyard_or_dropoff(ship_move2.second)) ||
+					(ship_move2.first->is_objective(Objective_Type::SUICIDE_ON_BASE) && game.is_shipyard_or_dropoff(ship_move1.second))
 				)
 			)
 				collisions[ship_move2.first] = ship_move2.second;
@@ -145,7 +145,7 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 			continue;
 		}
 		// If ship on suicide mission, do not change it
-		if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && (new_position == game.my_shipyard_position()))
+		if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && game.is_shipyard_or_dropoff(new_position))
 		{
 			continue;
 		}
@@ -280,8 +280,15 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 			exit(1);
 		}
 
-		Direction direction = game.game_map->get_move(ship_position.first->position, ship_position.second);
-		resolved_moves.push_back(ship_position.first->move(direction));
+		if (ship_position.first->is_objective(Objective_Type::MAKE_DROPOFF))
+		{
+			resolved_moves.push_back(ship_position.first->make_dropoff());
+		}
+		else
+		{
+			Direction direction = game.game_map->get_move(ship_position.first->position, ship_position.second);
+			resolved_moves.push_back(ship_position.first->move(direction));
+		}
 	}
 
 	return resolved_moves;

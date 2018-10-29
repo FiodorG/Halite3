@@ -5,6 +5,7 @@
 #include "constants.hpp"
 
 #include <vector>
+#include <math.h>
 
 using namespace std;
 
@@ -132,15 +133,41 @@ namespace hlt
 			return possible_moves;
 		}
 
-		vector<Direction> navigate(shared_ptr<Ship> ship, const Position& destination)
-		{
-			// Move resource checking here
-			return get_unsafe_moves(ship->position, destination);
-		}
-
 		bool ship_can_move(shared_ptr<Ship> ship)
 		{
 			return ship->halite >= (int)floor(0.1 * at(ship)->halite);
+		}
+
+		bool better_neighboring_cell_exists(const Position& position)
+		{
+			int halite = at(position)->halite;
+			int halite_over_one_turn = (int)ceil(0.25 * halite);
+			int halite_over_two_turn = halite_over_one_turn + (int)ceil(0.25 * (halite - halite_over_one_turn));
+			int north_halite = at(directional_offset(position, Direction::NORTH))->halite;
+			int south_halite = at(directional_offset(position, Direction::SOUTH))->halite;
+			int east_halite = at(directional_offset(position, Direction::EAST))->halite;
+			int west_halite = at(directional_offset(position, Direction::WEST))->halite;
+
+			if (
+				((-floor(0.1 * halite) + ceil(0.25 * north_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * south_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * east_halite)) > halite_over_two_turn) ||
+				((-floor(0.1 * halite) + ceil(0.25 * west_halite)) > halite_over_two_turn)
+				)
+				return true;
+			else
+				return false;
+		}
+
+		int halite_around_position(const Position& position, int distance)
+		{
+			int halite = 0;
+			for (vector<MapCell>& row : cells)
+				for (MapCell& cell : row)
+					if (calculate_distance(position, cell.position) <= distance)
+						halite += cell.halite;
+
+			return halite;
 		}
 
 		double scoring_function(MapCell* source_cell, MapCell* target_cell, const Game& game);

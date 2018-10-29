@@ -16,7 +16,8 @@ namespace hlt
 		EXTRACT,
 		BACK_TO_BASE,
 		BLOCK_ENEMY_BASE,
-		SUICIDE_ON_BASE
+		SUICIDE_ON_BASE,
+		MAKE_DROPOFF,
 	};
 
 	struct Objective
@@ -45,6 +46,9 @@ namespace hlt
 				break;
 			case SUICIDE_ON_BASE:
 				string_type = "SUICIDE ON BASE";
+				break;
+			case MAKE_DROPOFF:
+				string_type = "MAKE DROPOFF";
 				break;
 			default:
 				break;

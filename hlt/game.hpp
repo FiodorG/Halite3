@@ -6,6 +6,7 @@
 #include "collision_resolver.hpp"
 #include "pathfinder.hpp"
 #include "log.hpp"
+#include "scorer.hpp"
 
 #include <vector>
 #include <iostream>
@@ -22,28 +23,29 @@ namespace hlt
         vector<shared_ptr<Player>> players;
         shared_ptr<Player> me;
         unique_ptr<GameMap> game_map;
+		unordered_map<string, int> constants;
+		int dropoffs;
 
 		// For timer
 		clock_t start;
 
 		// Movement management
-		unique_ptr<CollisionResolver> collision_resolver;
+		CollisionResolver collision_resolver;
 		PathFinder pathfinder;
-
+		
 		unordered_map<shared_ptr<Ship>, Position> positions_next_turn;
 		vector<Command> command_queue;
 
 		// Scoring
-		vector<vector<int>> grid_score;
-		int total_halite;
+		Scorer scorer;
 
-		Game();
+		Game(unordered_map<string, int> constants);
 
 		void resolve_moves()
 		{
 			log::log("Resolving moves");
 
-			command_queue = collision_resolver->resolve_moves(*this);
+			command_queue = collision_resolver.resolve_moves(*this);
 		}
 
 		bool existing_objective_to_cell(const MapCell& cell) const
@@ -59,32 +61,11 @@ namespace hlt
 			return false;
 		}
 
-		bool better_neighboring_cell_exists(const Position& position)
-		{
-			int halite = mapcell(position)->halite;
-			int halite_over_one_turn = (int)ceil(0.25 * halite);
-			int halite_over_two_turn = halite_over_one_turn + (int)ceil(0.25 * (halite - halite_over_one_turn));
-			int north_halite = mapcell(game_map->directional_offset(position, Direction::NORTH))->halite;
-			int south_halite = mapcell(game_map->directional_offset(position, Direction::SOUTH))->halite;
-			int east_halite  = mapcell(game_map->directional_offset(position, Direction::EAST))->halite;
-			int west_halite  = mapcell(game_map->directional_offset(position, Direction::WEST))->halite;
-
-			if (
-				((-floor(0.1 * halite) + ceil(0.25 * north_halite)) > halite_over_two_turn) ||
-				((-floor(0.1 * halite) + ceil(0.25 * south_halite)) > halite_over_two_turn) ||
-				((-floor(0.1 * halite) + ceil(0.25 * east_halite)) > halite_over_two_turn) ||
-				((-floor(0.1 * halite) + ceil(0.25 * west_halite)) > halite_over_two_turn)
-			)
-				return true;
-			else
-				return false;
-		}
-
 		void assign_ship_to_target_position(shared_ptr<Ship> ship)
 		{
 			ship->set_assigned();
 
-			if (game_map->ship_can_move(ship))
+			if (game_map->ship_can_move(ship) || ship->is_objective(Objective_Type::MAKE_DROPOFF))
 			{
 				// Enough halite to move
 				log::log("Assigning: " + ship->to_string_ship());
@@ -100,19 +81,15 @@ namespace hlt
 				update_ship_target_position(ship, ship->position);
 			}
 		}
+
 		void update_ship_target_position(shared_ptr<Ship> ship, const Position& position)
 		{
 			if (positions_next_turn.count(ship))
-				flush_grid_score(positions_next_turn[ship]);
+				scorer.flush_grid_score(positions_next_turn[ship]);
 
 			positions_next_turn[ship] = position;
-			add_self_ships_to_grid_score(ship, position);
+			scorer.add_self_ships_to_grid_score(ship, position);
 		}
-
-		void update_grid_score();
-		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
-		void flush_grid_score(const Position& position);
-		int get_grid_score(const Position& position) const { return grid_score[position.y][position.x]; }
 
 		void generate_new_ships()
 		{
@@ -123,6 +100,52 @@ namespace hlt
 				my_ships_number() < max_allowed_ships()
 				)
 				command_queue.push_back(me->shipyard->spawn());
+		}
+
+		bool should_spawn_dropoff(const shared_ptr<Ship> ship)
+		{
+			if (
+				(me->halite + ship->halite >= 5 + constants::DROPOFF_COST) &&
+				(dropoffs < max_allowed_dropoffs()) &&
+				(game_map->calculate_distance(ship->position, get_closest_shipyard_or_dropoff(ship)) > get_constant("Dropoff: distance from shipyard")) &&
+				// keep for last as it's the longest to compute
+				(game_map->halite_around_position(ship->position, get_constant("Dropoff: distance nearby")) > get_constant("Dropoff: halite nearby"))
+				)
+			{
+				log::log("Spawning dropoff at " + ship->to_string_ship());
+				me->halite -= constants::DROPOFF_COST - ship->halite;
+				dropoffs++;
+				return true;
+			}
+
+			return false;
+		}
+
+		int max_allowed_dropoffs() const
+		{
+			int allowed_dropoffs = 0;
+			switch (game_map->width)
+			{
+			case 32:
+				allowed_dropoffs = 1;
+				break;
+			case 40:
+				allowed_dropoffs = 1;
+				break;
+			case 48:
+				allowed_dropoffs = (players.size() == 2) ? 2 : 1;
+				break;
+			case 56:
+				allowed_dropoffs = (players.size() == 2) ? 3 : 2;
+				break;
+			case 64:
+				allowed_dropoffs = (players.size() == 2) ? 3 : 2;
+				break;
+			default:
+				log::log("Unknown map width");
+				exit(1);
+			}
+			return allowed_dropoffs;
 		}
 
 		int max_allowed_ships() const
@@ -141,13 +164,13 @@ namespace hlt
 				allowed_ships = 28 - players.size();
 				break;
 			case 48:
-				allowed_ships = 32 - players.size();
+				allowed_ships = 34;
 				break;
 			case 56:
-				allowed_ships = 36 - players.size();
+				allowed_ships = 38;
 				break;
 			case 64:
-				allowed_ships = 40 - players.size();
+				allowed_ships = 45;
 				break;
 			default:
 				log::log("Unknown map width");
@@ -160,7 +183,7 @@ namespace hlt
 
 
 		/* Utilities */
-		MapCell* mapcell(const Position& position) { return game_map->at(position); }
+		MapCell* mapcell(const Position& position) const { return game_map->at(position); }
 		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
 		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
@@ -174,14 +197,34 @@ namespace hlt
 		}
 		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
 
+		int get_constant(string name) const { return constants.at(name); }
 		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
 		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
 		int my_ships_number() const { return me->ships.size(); }
+		int my_dropoff_number() const { return me->dropoffs.size(); }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		shared_ptr<Ship> ship_on_shipyard() const { return game_map->at(my_shipyard_position())->ship; }
+		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship)
+		{
+			int min_distance = game_map->calculate_distance(ship->position, my_shipyard_position());
+			Position closest_shipyard = my_shipyard_position();
 
+			for (auto& dropoff_iterator : me->dropoffs)
+			{
+				int distance = game_map->calculate_distance(ship->position, dropoff_iterator.second->position);
+
+				if (distance <= min_distance)
+				{
+					min_distance = distance;
+					closest_shipyard = dropoff_iterator.second->position;
+				}
+			}
+
+			return closest_shipyard;
+		}
+		bool is_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->has_base(my_id); }
 		bool position_occupied_next_turn(const Position& position)
 		{
 			for (auto& ship_position : positions_next_turn)
