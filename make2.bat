@@ -36,7 +36,7 @@ call !vcvarsall_location! !vcvarsall_architecture!
 
 mkdir obj 2> nul
 
-cl.exe /FeMyBot.exe /std:c++14 /O2 /MT /EHsc /I . /Fo.\obj\ ^
+cl.exe /FeMyBot2.exe /std:c++14 /O2 /MT /EHsc /I . /Fo.\obj\ ^
  /D_USE_MATH_DEFINES ^
  .\hlt\command.cpp ^
  .\hlt\constants.cpp ^
@@ -46,8 +46,8 @@ cl.exe /FeMyBot.exe /std:c++14 /O2 /MT /EHsc /I . /Fo.\obj\ ^
  .\hlt\collision_resolver.cpp ^
  .\hlt\pathfinder.cpp ^
  .\hlt\scorer.cpp ^
+ .\hlt\move_solver.cpp ^
  .\hlt\log.cpp ^
  .\hlt\player.cpp ^
- .\hlt\move_solver.cpp ^
  .\hlt\ship.cpp ^
- .\MyBot.cpp ^
+ .\MyBot2.cpp ^

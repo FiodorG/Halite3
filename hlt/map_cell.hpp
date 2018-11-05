@@ -26,7 +26,7 @@ namespace hlt
 		bool is_occupied_by_ally(PlayerId id) const { return static_cast<bool>(ship) && (ship->owner == id); }
 		bool is_occupied_by_enemy(PlayerId id) const { return static_cast<bool>(ship) && (ship->owner != id); }
         bool has_structure() const { return static_cast<bool>(structure); }
-		bool has_base(int playerid) const { return static_cast<bool>(structure) && structure->owner == playerid; }
+		bool is_shipyard_or_dropoff(int playerid) const { return static_cast<bool>(structure) && structure->owner == playerid; }
         void mark_unsafe(shared_ptr<Ship>& ship) { this->ship = ship; }
     };
 }

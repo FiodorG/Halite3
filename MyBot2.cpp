@@ -6,13 +6,13 @@
 
 using namespace std;
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
-    unsigned int rng_seed;
-    if (argc > 1)
-        rng_seed = static_cast<unsigned int>(stoul(argv[1]));
-	else 
-        rng_seed = static_cast<unsigned int>(time(nullptr));
+	unsigned int rng_seed;
+	if (argc > 1)
+		rng_seed = static_cast<unsigned int>(stoul(argv[1]));
+	else
+		rng_seed = static_cast<unsigned int>(time(nullptr));
 	mt19937 rng(rng_seed);
 
 	/* Constants */
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 	constants["Dropoff: distance nearby"] = 5;
 
 	constants["Score: Brute force reach"] = 4;
-	constants["Score: Area Discount"] = 2;
+	constants["Score: Area Discount"] = 3;
 	constants["Score: Smoothing radius"] = 3;
 
 	constants["Test"] = 1;

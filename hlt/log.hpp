@@ -15,5 +15,6 @@ namespace hlt
 
 		void log_vector(vector<int> vec);
 		void log_vectorvector(vector<vector<int>> vec);
+		void log_vectorvector(vector<vector<double>> vec);
     }
 }

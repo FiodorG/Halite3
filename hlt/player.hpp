@@ -21,7 +21,7 @@ namespace hlt
         Halite halite;
         unordered_map<EntityId, shared_ptr<Ship>> ships;
         unordered_map<EntityId, shared_ptr<Dropoff>> dropoffs;
-		list<shared_ptr<Ship>> ships_ordered;
+		vector<shared_ptr<Ship>> my_ships;
 
         Player(PlayerId player_id, int shipyard_x, int shipyard_y) :
             id(player_id),

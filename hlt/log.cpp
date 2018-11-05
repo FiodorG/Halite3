@@ -6,6 +6,8 @@
 #include <chrono>
 #include <stdio.h>
 
+#define HALITE_LOCAL
+
 static std::ofstream log_file;
 static std::vector<std::string> log_buffer;
 static bool has_opened = false;
@@ -47,7 +49,9 @@ void hlt::log::log(const std::string& message)
 {
     if (has_opened) 
 	{
+		#ifdef HALITE_LOCAL
         log_file << message << std::endl;
+		#endif
     } 
 	else 
 	{
@@ -70,6 +74,22 @@ void hlt::log::log_vector(std::vector<int> vec)
 }
 
 void hlt::log::log_vectorvector(std::vector<std::vector<int>> vec)
+{
+	for (unsigned int i = 0; i < vec.size(); ++i)
+	{
+		string padding = (i <= 9) ? "0" : "";
+		string line = "" + padding + to_string(i) + " | ";
+		for (unsigned int j = 0; j < vec.size(); ++j)
+			line += to_string(vec[i][j]) + " ";
+		line += " | " + padding + to_string(i);
+
+		hlt::log::log(line);
+	}
+
+	hlt::log::log("");
+}
+
+void hlt::log::log_vectorvector(std::vector<std::vector<double>> vec)
 {
 	for (unsigned int i = 0; i < vec.size(); ++i)
 	{

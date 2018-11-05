@@ -30,13 +30,17 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 	dropoffs = 0;
 	collision_resolver = CollisionResolver();
 	scorer = Scorer();
+	move_solver = MoveSolver(constants["Score: Brute force reach"]);
 	pathfinder = PathFinder(game_map->width);
 
-	scorer.grid_score = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
-	scorer.total_halite = 0;
+	// Scorer
+	scorer.grid_score_move = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 	for (vector<MapCell>& row : game_map->cells)
 		for (MapCell& cell : row)
 			scorer.total_halite += cell.halite;
+
+	scorer.grid_score_extract = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
+	scorer.grid_score_extract_smooth = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
@@ -88,7 +92,8 @@ void hlt::Game::update_frame()
 
 	command_queue.clear();
 	positions_next_turn.clear();
-	scorer.update_grid_score(*this);
+	scorer.update_grid_score_move(*this);
+	scorer.update_grid_score_extract(*this);
 }
 
 bool hlt::Game::end_turn(const std::vector<hlt::Command>& commands) 
@@ -123,7 +128,7 @@ void hlt::Game::fudge_ship_if_base_blocked()
 				if (
 					(game_map->at(ship_iterator.second)->halite < min_halite) &&
 					(ship_iterator.second->position != my_shipyard_position()) &&
-					game_map->ship_can_move(ship_iterator.second)
+					ship_can_move(ship_iterator.second)
 					)
 				{
 					ship_with_least_halite = ship_iterator.second;

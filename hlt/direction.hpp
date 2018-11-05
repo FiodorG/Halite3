@@ -18,9 +18,9 @@ namespace hlt
         STILL = 'o',
     };
 
-    static const array<Direction, 4> ALL_CARDINALS = 
+    static const array<Direction, 5> ALL_CARDINALS = 
 	{
-        { Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST }
+        { Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST, Direction::STILL }
     };
 
     static Direction invert_direction(Direction direction) 
@@ -80,6 +80,26 @@ namespace hlt
 			default:
 				log::log(string("Error: invert_direction: unknown direction ") + static_cast<char>(direction));
 				exit(1);
+		}
+	}
+
+	static string to_string_direction(const Direction& direction)
+	{
+		switch (direction)
+		{
+		case Direction::NORTH:
+			return "n";
+		case Direction::SOUTH:
+			return "s";
+		case Direction::EAST:
+			return "e";
+		case Direction::WEST:
+			return "w";
+		case Direction::STILL:
+			return "o";
+		default:
+			log::log(string("Error: invert_direction: unknown direction ") + static_cast<char>(direction));
+			exit(1);
 		}
 	}
 

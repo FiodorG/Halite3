@@ -7,6 +7,7 @@
 #include "pathfinder.hpp"
 #include "log.hpp"
 #include "scorer.hpp"
+#include "move_solver.hpp"
 
 #include <vector>
 #include <iostream>
@@ -39,6 +40,9 @@ namespace hlt
 		// Scoring
 		Scorer scorer;
 
+		// Move Solver
+		MoveSolver move_solver;
+
 		Game(unordered_map<string, int> constants);
 
 		void resolve_moves()
@@ -48,35 +52,22 @@ namespace hlt
 			command_queue = collision_resolver.resolve_moves(*this);
 		}
 
-		bool existing_objective_to_cell(const MapCell& cell) const
-		{
-			for (const auto& ship_iterator : me->ships)
-			{
-				shared_ptr<Ship> ship = ship_iterator.second;
-
-				if (ship->has_objective() && (ship->target_position() == cell.position))
-					return true;
-			}
-			
-			return false;
-		}
-
-		void assign_ship_to_target_position(shared_ptr<Ship> ship)
+		void assign_ship_to_target_position(shared_ptr<Ship> ship, const Position& position)
 		{
 			ship->set_assigned();
 
-			if (game_map->ship_can_move(ship) || ship->is_objective(Objective_Type::MAKE_DROPOFF))
+			if (ship_can_move(ship) || ship->is_objective(Objective_Type::MAKE_DROPOFF))
 			{
 				// Enough halite to move
-				log::log("Assigning: " + ship->to_string_ship());
+				//log::log("Assigning: " + ship->to_string_ship());
 				
-				Position target_position = pathfinder.compute_shortest_path(ship->position, ship->target_position(), *this);
+				Position target_position = pathfinder.compute_shortest_path(ship->position, position, *this);
 				update_ship_target_position(ship, target_position);
 			}
 			else
 			{
 				// Not enough halite to move
-				log::log("Staying still: " + ship->to_string_ship());
+				//log::log("Staying still: " + ship->to_string_ship());
 
 				update_ship_target_position(ship, ship->position);
 			}
@@ -97,7 +88,7 @@ namespace hlt
 				turns_remaining_percent() >= 0.33 &&
 				me->halite >= constants::SHIP_COST &&
 				!position_occupied_next_turn(my_shipyard_position()) &&
-				my_ships_number() < max_allowed_ships()
+				my_ships_number() <= max_allowed_ships()
 				)
 				command_queue.push_back(me->shipyard->spawn());
 		}
@@ -105,15 +96,15 @@ namespace hlt
 		bool should_spawn_dropoff(const shared_ptr<Ship> ship)
 		{
 			if (
-				(me->halite + ship->halite >= 5 + constants::DROPOFF_COST) &&
+				(me->halite + ship->halite + mapcell(ship)->halite >= 5 + constants::DROPOFF_COST) &&
 				(dropoffs < max_allowed_dropoffs()) &&
-				(game_map->calculate_distance(ship->position, get_closest_shipyard_or_dropoff(ship)) > get_constant("Dropoff: distance from shipyard")) &&
+				(game_map->calculate_distance(ship->position, get_closest_shipyard_or_dropoff(ship)) > (int)ceil(0.5 * game_map->width)) &&
 				// keep for last as it's the longest to compute
 				(game_map->halite_around_position(ship->position, get_constant("Dropoff: distance nearby")) > get_constant("Dropoff: halite nearby"))
 				)
 			{
 				log::log("Spawning dropoff at " + ship->to_string_ship());
-				me->halite -= constants::DROPOFF_COST - ship->halite;
+				me->halite -= constants::DROPOFF_COST - ship->halite - mapcell(ship)->halite;
 				dropoffs++;
 				return true;
 			}
@@ -127,13 +118,13 @@ namespace hlt
 			switch (game_map->width)
 			{
 			case 32:
-				allowed_dropoffs = 1;
+				allowed_dropoffs = (players.size() == 2) ? 1 : 0;
 				break;
 			case 40:
 				allowed_dropoffs = 1;
 				break;
 			case 48:
-				allowed_dropoffs = (players.size() == 2) ? 2 : 1;
+				allowed_dropoffs = 2;
 				break;
 			case 56:
 				allowed_dropoffs = (players.size() == 2) ? 3 : 2;
@@ -158,19 +149,19 @@ namespace hlt
 			switch (game_map->width)
 			{
 			case 32:
-				allowed_ships = 24;
+				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 32") : get_constant("Max Ships 4p: 32");
 				break;
 			case 40:
-				allowed_ships = 28 - players.size();
+				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 40") : get_constant("Max Ships 4p: 40");
 				break;
 			case 48:
-				allowed_ships = 34;
+				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 48") : get_constant("Max Ships 4p: 48");
 				break;
 			case 56:
-				allowed_ships = 38;
+				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 56") : get_constant("Max Ships 4p: 56");
 				break;
 			case 64:
-				allowed_ships = 45;
+				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 64") : get_constant("Max Ships 4p: 64");
 				break;
 			default:
 				log::log("Unknown map width");
@@ -184,6 +175,8 @@ namespace hlt
 
 		/* Utilities */
 		MapCell* mapcell(const Position& position) const { return game_map->at(position); }
+		MapCell* mapcell(shared_ptr<Ship> ship) const { return game_map->at(ship->position); }
+		MapCell* mapcell(int x, int y) const { return game_map->at(y, x); }
 		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
 		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
@@ -199,21 +192,25 @@ namespace hlt
 
 		int get_constant(string name) const { return constants.at(name); }
 		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
-		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
+		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		int my_ships_number() const { return me->ships.size(); }
 		int my_dropoff_number() const { return me->dropoffs.size(); }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		shared_ptr<Ship> ship_on_shipyard() const { return game_map->at(my_shipyard_position())->ship; }
-		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship)
+		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship) const
 		{
-			int min_distance = game_map->calculate_distance(ship->position, my_shipyard_position());
+			return get_closest_shipyard_or_dropoff(ship->position);
+		}
+		Position get_closest_shipyard_or_dropoff(const Position& position) const
+		{
+			int min_distance = game_map->calculate_distance(position, my_shipyard_position());
 			Position closest_shipyard = my_shipyard_position();
 
 			for (auto& dropoff_iterator : me->dropoffs)
 			{
-				int distance = game_map->calculate_distance(ship->position, dropoff_iterator.second->position);
+				int distance = game_map->calculate_distance(position, dropoff_iterator.second->position);
 
 				if (distance <= min_distance)
 				{
@@ -224,7 +221,7 @@ namespace hlt
 
 			return closest_shipyard;
 		}
-		bool is_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->has_base(my_id); }
+		bool is_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->is_shipyard_or_dropoff(my_id); }
 		bool position_occupied_next_turn(const Position& position)
 		{
 			for (auto& ship_position : positions_next_turn)
@@ -234,6 +231,9 @@ namespace hlt
 			return false;
 		}
 
+		int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }
+		int distance_from_objective(shared_ptr<Ship> ship) const { return game_map->calculate_distance(ship->position, ship->target_position()); }
+		bool ship_can_move(shared_ptr<Ship> ship) const { return ship->halite >= (int)floor(0.1 * mapcell(ship)->halite); }
 
 		/* Logging */
 		void log_start_turn()

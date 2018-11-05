@@ -35,14 +35,10 @@ void Player::_update(int num_ships, int num_dropoffs, Halite halite)
         dropoffs[dropoff->id] = dropoff;
     }
 
-	// Have ship in order of halite
-	PriorityQueue<shared_ptr<Ship>, int> ships_in_priority;
-	for (const auto& ship_iterator : ships)
-		ships_in_priority.put(ship_iterator.second, ship_iterator.second->halite);
-
-	ships_ordered.clear();
-	while (!ships_in_priority.empty())
-		ships_ordered.push_front(ships_in_priority.get());
+	// Vector of my ships
+	my_ships.clear();
+	for (const auto& ship : ships)
+		my_ships.push_back(ship.second);
 }
 
 shared_ptr<Player> Player::_generate() 

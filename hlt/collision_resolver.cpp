@@ -158,7 +158,7 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		else
 		{
 			Position position_next_turn_old = game.positions_next_turn[ship];
-			game.assign_ship_to_target_position(ship);
+			game.assign_ship_to_target_position(ship, ship->target_position());
 			Position position_next_turn_new = game.positions_next_turn[ship];
 
 			// If no paths have been changed, stop ship
@@ -192,8 +192,8 @@ void CollisionResolver::exchange_ships(Game& game)
 
 			if (
 				(game.game_map->calculate_distance(ship1->position, ship2->position) == 1) && // ships are contiguous
-				game.game_map->ship_can_move(ship1) && // ship1 can move
-				game.game_map->ship_can_move(ship2) && // ship2 can move
+				game.ship_can_move(ship1) && // ship1 can move
+				game.ship_can_move(ship2) && // ship2 can move
 				!ships_selected.count(ship1->id) && // ship1 not already selected
 				!ships_selected.count(ship2->id) && // ship2 not already selected
 				!ship1->is_at_objective() &&  // ship1 not at objective 
@@ -253,7 +253,6 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 
 		if (i == 50)
 			break;
-			//log::log_vectorvector(game.grid_score);
 	}
 
 	// While enemy collisions exist, edit ships one by one

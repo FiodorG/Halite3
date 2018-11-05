@@ -18,6 +18,8 @@ namespace hlt
 		BLOCK_ENEMY_BASE,
 		SUICIDE_ON_BASE,
 		MAKE_DROPOFF,
+		EXTRACT_ZONE,
+		MOVE
 	};
 
 	struct Objective
@@ -25,10 +27,12 @@ namespace hlt
 		int id;
 		Objective_Type type;
 		Position target_position;
+		double score;
 
 		Objective() {}
-		Objective(int id, Objective_Type type) : id(id), type(type) {}
-		Objective(int id, Objective_Type type, Position target_position) : id(id), type(type), target_position(target_position) {}
+		Objective(int id, Objective_Type type) : id(id), type(type), score(0) {}
+		Objective(int id, Objective_Type type, Position target_position) : id(id), type(type), target_position(target_position), score(0) {}
+		Objective(int id, Objective_Type type, Position target_position, double score) : id(id), type(type), target_position(target_position), score(score) {}
 
 		string to_string_objective()
 		{
@@ -50,11 +54,17 @@ namespace hlt
 			case MAKE_DROPOFF:
 				string_type = "MAKE DROPOFF";
 				break;
+			case MOVE:
+				string_type = "MOVE";
+				break;
+			case EXTRACT_ZONE:
+				string_type = "EXTRACT ZONE";
+				break;
 			default:
 				break;
 			}
 
-			return "Objective(" + string_type + ":" + target_position.to_string_position() + ")";
+			return "Objective(" + string_type + ":" + target_position.to_string_position() + ", " + to_string((int)score) + ")";
 		}
 	};
 }

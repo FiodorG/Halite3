@@ -26,11 +26,10 @@ namespace hlt
 		void clear_objective() { this->objective.reset(); }
 		bool has_objective() const { return static_cast<bool>(objective); }
 
-		void assign_objective(Objective_Type objective_type, const Position& position) 
+		void assign_objective(Objective_Type objective_type, const Position& position, double score = 0) 
 		{ 
-			this->objective = shared_ptr<Objective>(new Objective(0, objective_type, position));
+			this->objective = shared_ptr<Objective>(new Objective(0, objective_type, position, score));
 		}
-
 		void assign_objective(shared_ptr<Ship> ship)
 		{
 			if (static_cast<bool>(ship->objective))
@@ -51,6 +50,13 @@ namespace hlt
 				return this->objective->target_position;
 			else
 				throw runtime_error("Ship" + to_string(id) + " has no objective");
+		}
+		double objective_score() const
+		{
+			if (has_objective())
+				return this->objective->score;
+			else
+				return 0.0;
 		}
 
 		bool is_at_objective() const
