@@ -22,19 +22,57 @@ namespace hlt
 	class MoveSolver
 	{
 		public:
-		vector<vector<Direction>> all_path_permutations;
+		vector<vector<Direction>> all_path_permutations_3;
+		vector<vector<Direction>> all_path_permutations_4;
+		vector<vector<Direction>> all_path_permutations_5;
 
-		MoveSolver() {}
-		MoveSolver(int move_number) 
+		MoveSolver() 
 		{
-			all_path_permutations = get_all_permutations(move_number);
+			all_path_permutations_3 = get_all_permutations(3);
+			all_path_permutations_4 = get_all_permutations(4);
+			all_path_permutations_5 = get_all_permutations(5);
 		}
 
-		vector<shared_ptr<Ship>> filter_ships_without_actions(unordered_map<shared_ptr<Ship>, int> ships_without_actions) const;
+		const vector<vector<Direction>>* get_path_permutations(int reach) const
+		{
+			switch (reach)
+			{
+			case 3:
+				return &all_path_permutations_3;
+			case 4:
+				return &all_path_permutations_4;
+			case 5:
+				return &all_path_permutations_5;
+			default:
+				log::log(string("Error: invalid path permuataion."));
+				exit(1);
+			}
+		}
+		Direction get_best_direction(int best_score_index, int best_score_move, int reach) const
+		{
+			switch (reach)
+			{
+			case 3:
+				return all_path_permutations_3[best_score_index][best_score_move];
+			case 4:
+				return all_path_permutations_4[best_score_index][best_score_move];
+			case 5:
+				return all_path_permutations_5[best_score_index][best_score_move];
+			default:
+				log::log(string("Error: invalid path permuataion."));
+				exit(1);
+			}
+		}
+
+		//unordered_map<Objective_Type, vector<shared_ptr<Ship>>> split_ships_without_actions(const Game& game) const;
+		//vector<shared_ptr<Ship>> get_ships_without_actions(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split) const;
+		//void remove_ship_from_available(unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split, const shared_ptr<Ship>& ship);
+		//int ships_without_actions_size(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>> ships_without_actions) const;
+
 		pair<Position, int> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
-		pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game) const;
+		pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
 		bool valid_move(const Position& position, const Game& game) const;
-		int final_cargo_on_path(shared_ptr<Ship> ship, const vector<Direction>& path, const Game& game) const;
+		tuple<int, int> score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
 		vector<vector<Direction>> get_all_permutations(int move_number) const;
 	};
 }

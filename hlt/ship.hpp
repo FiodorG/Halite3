@@ -26,15 +26,13 @@ namespace hlt
 		void clear_objective() { this->objective.reset(); }
 		bool has_objective() const { return static_cast<bool>(objective); }
 
-		void assign_objective(Objective_Type objective_type, const Position& position, double score = 0) 
-		{ 
-			this->objective = shared_ptr<Objective>(new Objective(0, objective_type, position, score));
-		}
 		void assign_objective(shared_ptr<Ship> ship)
 		{
 			if (static_cast<bool>(ship->objective))
 				this->objective = ship->objective;
 		}
+		Objective_Type objective_type() const { return objective->type; }
+		void set_objective_position(const Position& position) { this->objective->target_position = position; }
 
 		bool is_objective(Objective_Type type) const
 		{
@@ -66,7 +64,7 @@ namespace hlt
 			else
 				return false;
 		}
-
+		int missing_halite() const { return max(900 - halite, 0); }
 
 		/* Logging & Internal */
 		string to_string_ship()

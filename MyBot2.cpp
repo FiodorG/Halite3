@@ -32,14 +32,10 @@ int main(int argc, char* argv[])
 	constants["Max Ships 4p: 56"] = 50;
 	constants["Max Ships 4p: 64"] = 55;
 
-	constants["Dropoff: halite nearby"] = 4500;
-	constants["Dropoff: distance nearby"] = 5;
-
 	constants["Score: Brute force reach"] = 4;
-	constants["Score: Area Discount"] = 3;
 	constants["Score: Smoothing radius"] = 3;
 
 	constants["Test"] = 1;
 
-	return mybot_internal("GSBot1", constants, rng_seed);
+	return mybot_internal("GSBot2", constants, rng_seed);
 }

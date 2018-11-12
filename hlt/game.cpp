@@ -4,7 +4,9 @@
 #include <sstream>
 #include <ctime>
 #include <stdint.h>
+#include <algorithm>
 
+using namespace std;
 
 hlt::Game::Game(unordered_map<string, int> constants) :
 	turn_number(0),
@@ -27,20 +29,19 @@ hlt::Game::Game(unordered_map<string, int> constants) :
     game_map = GameMap::_generate();
 
 	// My stuff
-	dropoffs = 0;
+	reserved_halite = 0;
 	collision_resolver = CollisionResolver();
 	scorer = Scorer();
-	move_solver = MoveSolver(constants["Score: Brute force reach"]);
+	move_solver = MoveSolver();
 	pathfinder = PathFinder(game_map->width);
+	distance_manager = DistanceManager();
+	objective_manager = ObjectiveManager();
 
-	// Scorer
 	scorer.grid_score_move = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
-	for (vector<MapCell>& row : game_map->cells)
-		for (MapCell& cell : row)
-			scorer.total_halite += cell.halite;
-
+	scorer.grid_score_highway = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract_smooth = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
+	scorer.grid_score_inspiration = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
@@ -91,9 +92,38 @@ void hlt::Game::update_frame()
     }
 
 	command_queue.clear();
+
+	// Navigation
 	positions_next_turn.clear();
+
+	// Objectives
+	reserved_halite = 0;
+	objective_manager.turn_since_last_dropoff++;
+	objective_manager.flush_objectives();
+
+	// Scorer
 	scorer.update_grid_score_move(*this);
 	scorer.update_grid_score_extract(*this);
+	scorer.update_grid_score_highway(*this);
+	scorer.update_grid_score_inspiration(*this);
+
+	// Scorer
+	scorer.halite_total = 0;
+	for (vector<MapCell>& row : game_map->cells)
+		for (MapCell& cell : row)
+			scorer.halite_total += cell.halite;
+
+	scorer.halite_percentile = 0;
+	int i = 0;
+	vector<int> halite_all = vector<int>(game_map->width * game_map->height, 0);
+	for (vector<MapCell>& row : game_map->cells)
+		for (MapCell& cell : row)
+			halite_all[i++] = cell.halite;
+	std::sort(halite_all.begin(), halite_all.end());
+	scorer.halite_percentile = halite_all[(int)(0.8 * game_map->width * game_map->height)];
+
+	// Distance manager
+	//distance_manager.fill_distances(*this);
 }
 
 bool hlt::Game::end_turn(const std::vector<hlt::Command>& commands) 
@@ -139,13 +169,13 @@ void hlt::Game::fudge_ship_if_base_blocked()
 			// Move ship away from shipyard
 			Direction direction = invert_direction(game_map->get_move(ship_with_least_halite->position, my_shipyard_position()));
 			Position position = game_map->directional_offset(ship_with_least_halite->position, direction);
-			ship_with_least_halite->assign_objective(Objective_Type::EXTRACT, position);
+			assign_objective(ship_with_least_halite, Objective_Type::EXTRACT, position);
 			update_ship_target_position(ship_with_least_halite, position);
 			
 			log::log("Pushing " + ship_with_least_halite->to_string_ship());
 
 			// Ship on shipyard sent to ship moved away
-			ship_on_shipyard()->assign_objective(Objective_Type::EXTRACT, ship_with_least_halite->position);
+			assign_objective(ship_on_shipyard(), Objective_Type::EXTRACT, ship_with_least_halite->position);
 			update_ship_target_position(ship_on_shipyard(), ship_with_least_halite->position);
 
 			log::log("Pushing " + ship_on_shipyard()->to_string_ship());

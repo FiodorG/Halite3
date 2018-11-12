@@ -22,127 +22,59 @@ namespace hlt
 			game.update_frame();
 			game.log_start_turn();
 
-			/*
-			Update MAKE DROPOFF
-			**********************
-			*/
-			for (const shared_ptr<Ship>& ship : game.me->my_ships)
-			{
-				if (ship->assigned)
-					continue;
-
-				if (game.should_spawn_dropoff(ship))
-				{
-					ship->assign_objective(Objective_Type::MAKE_DROPOFF, ship->position);
-					ship->set_assigned();
-				}
-			}
-
-			/*
-			Update SUICIDE_ON_BASE
-			**********************
-			*/
-			for (const shared_ptr<Ship>& ship : game.me->my_ships)
-			{
-				if (ship->assigned)
-					continue;
-
-				if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE) || (2 * game.game_map->calculate_distance(ship->position, game.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()))
-				{
-					ship->assign_objective(Objective_Type::SUICIDE_ON_BASE, game.get_closest_shipyard_or_dropoff(ship));
-					ship->set_assigned();
-				}
-			}
-
-			/*
-			Update RETURN_TO_BASE
-			**********************
-			*/
-			for (const shared_ptr<Ship>& ship : game.me->my_ships)
-			{
-				if (ship->assigned)
-					continue;
-
-				if (ship->is_objective(Objective_Type::BACK_TO_BASE) && (game.is_shipyard_or_dropoff(ship->position)))
-					ship->clear_objective();
-
-				if ((ship->is_objective(Objective_Type::BACK_TO_BASE)) || (ship->is_full(0.9)))
-				{
-					ship->assign_objective(Objective_Type::BACK_TO_BASE, game.get_closest_shipyard_or_dropoff(ship));
-					ship->set_assigned();
-				}
-			}
-
-			/*
-			Update EXTRACT_ZONE 
-			**********************
-			In globally greedy assignment
-			*/
-			unordered_map<shared_ptr<Ship>, double> ships_without_objectives;
-			for (const shared_ptr<Ship>& ship : game.me->my_ships)
-				if(!ship->assigned)
-					ships_without_objectives[ship] = -DBL_MAX;
-
-			while (ships_without_objectives.size())
-			{
-				shared_ptr<Ship> best_ship;
-				MapCell* best_cell = &game.game_map->cells[0][0];
-				double best_score = -DBL_MAX;
-
-				for (const auto& ship : ships_without_objectives)
-				{
-					pair<MapCell*, double> action = game.scorer.find_best_objective_cell(ship.first, game);
-
-					if (action.second > best_score)
-					{
-						best_ship = ship.first;
-						best_score = action.second;
-						best_cell = action.first;
-					}
-				}
-
-				log::log(best_ship->to_string_ship() + " assigned to area " + best_cell->position.to_string_position() + " with score " + to_string(best_score));
-
-				game.scorer.decreases_score_in_target_area(best_ship, best_cell, game);
-				best_ship->assign_objective(Objective_Type::EXTRACT_ZONE, best_cell->position, best_score);
-				ships_without_objectives.erase(best_ship);
-			}
+			game.objective_manager.assign_objectives(game);
+			game.objective_manager.get_ordered_ships(game);
 
 			/*
 			Compute ship moves
 			**********************
-			In globally greedy assignment
 			*/
-			unordered_map<shared_ptr<Ship>, int> ships_without_actions;
-			for (const shared_ptr<Ship>& ship : game.me->my_ships)
-				ships_without_actions[ship] = INT_MIN;
-
-			while (ships_without_actions.size())
+			for (int i = 0; i < 1; i++)
 			{
-				shared_ptr<Ship> best_ship;
-				Position best_position;
-				int best_score = INT_MIN;
-
-				vector<shared_ptr<Ship>> filtered_ships = game.move_solver.filter_ships_without_actions(ships_without_actions);
-				for (const auto& ship : filtered_ships)
+				for (auto& ship : game.objective_manager.ships_ordered)
 				{
 					pair<Position, int> action = game.move_solver.find_best_action(ship, game);
 
-					if (action.second > best_score)
-					{
-						best_ship     = ship;
-						best_score    = action.second;
-						best_position = action.first;
-					}
+					ship->set_objective_position(action.first);
+					game.assign_ship_to_target_position(ship, action.first);
+					log::log(ship->to_string_ship() + " goes to " + action.first.to_string_position());
 				}
-
-				log::log(best_ship->to_string_ship() + " goes to " + best_position.to_string_position() + " with score " + to_string(best_score));
-
-				game.assign_ship_to_target_position(best_ship, best_position);
-				ships_without_actions.erase(best_ship);
 			}
 
-			//if (game.turn_number == 11)
+			//auto ships_without_actions = game.move_solver.split_ships_without_actions(game);
+
+			//while (game.move_solver.ships_without_actions_size(ships_without_actions))
+			//{
+			//	shared_ptr<Ship> best_ship;
+			//	Position best_position;
+			//	int best_score = INT_MIN;
+
+			//	vector<shared_ptr<Ship>> filtered_ships = game.move_solver.get_ships_without_actions(ships_without_actions);
+			//	for (const auto& ship : filtered_ships)
+			//	{
+			//		pair<Position, int> action = game.move_solver.find_best_action(ship, game);
+
+			//		if (action.second > best_score)
+			//		{
+			//			best_ship     = ship;
+			//			best_score    = action.second;
+			//			best_position = action.first;
+			//		}
+			//	}
+
+			//	//best_ship->set_objective_position(best_position);
+			//	game.assign_ship_to_target_position(best_ship, best_position);
+
+			//	log::log(best_ship->to_string_ship() + " goes to " + best_position.to_string_position() + " with score " + to_string(best_score));
+
+			//	game.move_solver.remove_ship_from_available(ships_without_actions, best_ship);
+			//}
+
+			//int shipid = 3;
+			//if (game.me->ships.count(shipid))
+			//	game.scorer.find_best_objective_cell(game.me->ships[shipid], game, (game.turn_number == 13));
+
+			//if (game.turn_number == 100)
 			//	exit(1);
 
 			game.fudge_ship_if_base_blocked();

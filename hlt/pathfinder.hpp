@@ -35,7 +35,8 @@ namespace hlt
 		inline int heuristic(MapCell* cell, MapCell* target_cell, const Game& game) const;
 		int compute_next_step_score(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const;
 		vector<MapCell*> dijkstra_path(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
-		pair<vector<vector<int>>, vector<vector<int>>> dijkstra_costs(MapCell* source_cell, const Game& game) const;
+		//vector<vector<int>> dijkstra_costs(MapCell* source_cell, const Game& game) const;
+		//vector<MapCell*> dijkstra_halite_per_turn(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
 
 		void log_path(vector<MapCell*>& optimal_path, const Game& game) const;
 		void log_costs(unordered_map<MapCell*, int> cost_so_far, const Game& game) const;

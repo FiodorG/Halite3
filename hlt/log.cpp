@@ -1,12 +1,11 @@
 #include "log.hpp"
+#include "defines.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <stdio.h>
-
-#define HALITE_LOCAL
 
 static std::ofstream log_file;
 static std::vector<std::string> log_buffer;
@@ -49,7 +48,7 @@ void hlt::log::log(const std::string& message)
 {
     if (has_opened) 
 	{
-		#ifdef HALITE_LOCAL
+		#if HALITE_LOCAL
         log_file << message << std::endl;
 		#endif
     } 

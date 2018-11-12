@@ -80,6 +80,20 @@ namespace hlt
 			return toroidal_dx + toroidal_dy;
 		}
 
+		int calculate_distance_from_axis(const Position& source, const Position& target) const
+		{
+			const auto& normalized_source = normalize(source);
+			const auto& normalized_target = normalize(target);
+
+			const int dx = abs(normalized_source.x - normalized_target.x);
+			const int dy = abs(normalized_source.y - normalized_target.y);
+
+			const int toroidal_dx = min(dx, width - dx);
+			const int toroidal_dy = min(dy, height - dy);
+
+			return min(toroidal_dx, toroidal_dy);
+		}
+
 		Direction get_move(const Position& source, const Position& destination)
 		{
 			const auto& normalized_source = normalize(source);
@@ -131,17 +145,6 @@ namespace hlt
 				possible_moves.push_back(dy < wrapped_dy ? Direction::NORTH : Direction::SOUTH);
 
 			return possible_moves;
-		}
-
-		int halite_around_position(const Position& position, int distance)
-		{
-			int halite = 0;
-			for (vector<MapCell>& row : cells)
-				for (MapCell& cell : row)
-					if (calculate_distance(position, cell.position) <= distance)
-						halite += cell.halite;
-
-			return halite;
 		}
 
 		/* Next turn functions */

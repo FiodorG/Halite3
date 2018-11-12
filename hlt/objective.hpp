@@ -68,3 +68,32 @@ namespace hlt
 		}
 	};
 }
+
+//namespace std
+//{
+//	template <> struct hash<hlt::Objective_Type>
+//	{
+//		size_t operator()(const hlt::Objective_Type& objective_type) const
+//		{
+//			switch (objective_type)
+//			{
+//			case EXTRACT:
+//				return 1;
+//			case BACK_TO_BASE:
+//				return 2;
+//			case BLOCK_ENEMY_BASE:
+//				return 3;
+//			case SUICIDE_ON_BASE:
+//				return 4;
+//			case MAKE_DROPOFF:
+//				return 5;
+//			case MOVE:
+//				return 6;
+//			case EXTRACT_ZONE:
+//				return 7;
+//			default:
+//				return 8;
+//			}
+//		}
+//	};
+//}

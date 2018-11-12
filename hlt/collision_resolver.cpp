@@ -273,13 +273,7 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 	// Generate Command vector
 	for (auto& ship_position : game.positions_next_turn)
 	{
-		if (game.game_map->calculate_distance(ship_position.first->position, ship_position.second) > 1)
-		{
-			log::log("Error: target position too far");
-			exit(1);
-		}
-
-		if (ship_position.first->is_objective(Objective_Type::MAKE_DROPOFF))
+		if (game.objective_manager.can_spawn_dropoff(ship_position.first, game))
 		{
 			resolved_moves.push_back(ship_position.first->make_dropoff());
 		}

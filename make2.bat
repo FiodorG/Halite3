@@ -44,6 +44,8 @@ cl.exe /FeMyBot2.exe /std:c++14 /O2 /MT /EHsc /I . /Fo.\obj\ ^
  .\hlt\game.cpp ^
  .\hlt\game_map.cpp ^
  .\hlt\collision_resolver.cpp ^
+ .\hlt\distance_manager.cpp ^
+ .\hlt\objective_manager.cpp ^
  .\hlt\pathfinder.cpp ^
  .\hlt\scorer.cpp ^
  .\hlt\move_solver.cpp ^

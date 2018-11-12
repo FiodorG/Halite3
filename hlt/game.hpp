@@ -8,10 +8,17 @@
 #include "log.hpp"
 #include "scorer.hpp"
 #include "move_solver.hpp"
+#include "distance_manager.hpp"
+#include "objective_manager.hpp"
+#include "defines.hpp"
+#include "stopwatch.hpp"
 
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <math.h>
+#include <utility>
+#include <cfloat>
 
 using namespace std;
 
@@ -25,7 +32,7 @@ namespace hlt
         shared_ptr<Player> me;
         unique_ptr<GameMap> game_map;
 		unordered_map<string, int> constants;
-		int dropoffs;
+		int reserved_halite;
 
 		// For timer
 		clock_t start;
@@ -39,16 +46,20 @@ namespace hlt
 
 		// Scoring
 		Scorer scorer;
+		DistanceManager distance_manager;
 
 		// Move Solver
 		MoveSolver move_solver;
+
+		// Objectives
+		ObjectiveManager objective_manager;
+
 
 		Game(unordered_map<string, int> constants);
 
 		void resolve_moves()
 		{
-			log::log("Resolving moves");
-
+			Stopwatch s("Collising Resolve");
 			command_queue = collision_resolver.resolve_moves(*this);
 		}
 
@@ -56,11 +67,10 @@ namespace hlt
 		{
 			ship->set_assigned();
 
-			if (ship_can_move(ship) || ship->is_objective(Objective_Type::MAKE_DROPOFF))
+			if (ship_can_move(ship))
 			{
 				// Enough halite to move
 				//log::log("Assigning: " + ship->to_string_ship());
-				
 				Position target_position = pathfinder.compute_shortest_path(ship->position, position, *this);
 				update_ship_target_position(ship, target_position);
 			}
@@ -86,30 +96,11 @@ namespace hlt
 		{
 			if (
 				turns_remaining_percent() >= 0.33 &&
-				me->halite >= constants::SHIP_COST &&
+				me->halite - reserved_halite >= constants::SHIP_COST &&
 				!position_occupied_next_turn(my_shipyard_position()) &&
 				my_ships_number() <= max_allowed_ships()
 				)
 				command_queue.push_back(me->shipyard->spawn());
-		}
-
-		bool should_spawn_dropoff(const shared_ptr<Ship> ship)
-		{
-			if (
-				(me->halite + ship->halite + mapcell(ship)->halite >= 5 + constants::DROPOFF_COST) &&
-				(dropoffs < max_allowed_dropoffs()) &&
-				(game_map->calculate_distance(ship->position, get_closest_shipyard_or_dropoff(ship)) > (int)ceil(0.5 * game_map->width)) &&
-				// keep for last as it's the longest to compute
-				(game_map->halite_around_position(ship->position, get_constant("Dropoff: distance nearby")) > get_constant("Dropoff: halite nearby"))
-				)
-			{
-				log::log("Spawning dropoff at " + ship->to_string_ship());
-				me->halite -= constants::DROPOFF_COST - ship->halite - mapcell(ship)->halite;
-				dropoffs++;
-				return true;
-			}
-
-			return false;
 		}
 
 		int max_allowed_dropoffs() const
@@ -189,6 +180,7 @@ namespace hlt
 				game_map->at(position)->is_occupied_by_enemy(my_id);
 		}
 		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
+		int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
 
 		int get_constant(string name) const { return constants.at(name); }
 		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
@@ -198,6 +190,29 @@ namespace hlt
 		int my_dropoff_number() const { return me->dropoffs.size(); }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
+		vector<Position> my_shipyard_or_dropoff_positions() const
+		{
+			vector<Position> positions;
+			positions.push_back(my_shipyard_position());
+			for (auto& dropoff : me->dropoffs)
+				positions.push_back(dropoff.second->position);
+			return positions;
+		}
+		vector<Position> enemy_shipyard_or_dropoff_positions() const
+		{
+			vector<Position> positions;
+			for (const auto& player : players)
+			{
+				if (player->id == my_id)
+					continue;
+
+				positions.push_back(player->shipyard->position);
+				for (auto& dropoff : player->dropoffs)
+					positions.push_back(dropoff.second->position);
+			}
+			
+			return positions;
+		}
 		shared_ptr<Ship> ship_on_shipyard() const { return game_map->at(my_shipyard_position())->ship; }
 		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship) const
 		{
@@ -234,6 +249,31 @@ namespace hlt
 		int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }
 		int distance_from_objective(shared_ptr<Ship> ship) const { return game_map->calculate_distance(ship->position, ship->target_position()); }
 		bool ship_can_move(shared_ptr<Ship> ship) const { return ship->halite >= (int)floor(0.1 * mapcell(ship)->halite); }
+		shared_ptr<Ship> closest_ship_to_position(const Position& position) const
+		{
+			shared_ptr<Ship> closest_ship = me->my_ships[0];
+			int closest_distance = 9999;
+
+			for (const shared_ptr<Ship>& ship : me->my_ships)
+			{
+				int current_distance = distance(ship->position, position);
+				if (current_distance < closest_distance)
+				{
+					closest_ship = ship;
+					closest_distance = current_distance;
+				}
+			}
+
+			return closest_ship;
+		}
+
+		void assign_objective(shared_ptr<Ship> ship, Objective_Type objective_type, const Position& position, double score = 0)
+		{
+			if (score == 0.0)
+				score = distance(ship->position, position);
+
+			ship->objective = shared_ptr<Objective>(new Objective(0, objective_type, position, score));
+		}
 
 		/* Logging */
 		void log_start_turn()
@@ -257,6 +297,9 @@ namespace hlt
 		void log_end_turn()
 		{
 			log::log("END TURN");
+			log::log("Total ships: " + to_string(my_ships_number()));
+			log::log("Total halite: " + to_string(scorer.halite_total));
+			log::log("80th pctl halite: " + to_string(scorer.halite_percentile));
 
 			// Log all player's ships
 			//log::log("Ships(" + to_string(my_ships_number()) + "):");

@@ -1,8 +1,6 @@
 #include "scorer.hpp"
 #include "game.hpp"
 
-#include <cmath>
-
 using namespace hlt;
 using namespace std;
 
@@ -15,7 +13,6 @@ double Scorer::linear_increase(int x, int x_min, int x_max, double y_min, double
 	else
 		return y_min + ((double)(x - x_min) / (double)(x_max - x_min)) * (y_max - y_min);
 }
-
 double Scorer::linear_decrease(int x, int x_min, int x_max, double y_min, double y_max)
 {
 	if (x <= x_min)
@@ -24,6 +21,17 @@ double Scorer::linear_decrease(int x, int x_min, int x_max, double y_min, double
 		return y_min;
 	else
 		return y_max - ((double)(x - x_min) / (double)(x_max - x_min)) * (y_max - y_min);
+}
+double Scorer::butterfly(double x, double x_min, double x_mid, double x_max, double y_min, double y_mid, double y_max) const
+{
+	if (x <= x_min)
+		return y_min;
+	else if (x >= x_max)
+		return y_max;
+	else if ((x >= x_min) && (x <= x_mid))
+		return y_min + ((double)(x - x_min) / (double)(x_mid - x_min)) * (y_mid - y_min);
+	else //if ((x <= x_max) && (x >= x_mid))
+		return y_mid - ((double)(x - x_mid) / (double)(x_max - x_mid)) * (y_mid - y_max);
 }
 
 void hlt::Scorer::update_grid_score_move(const Game& game)
@@ -44,12 +52,59 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 				grid_score_move[i][j] = 9;
 		}
 }
+void hlt::Scorer::update_grid_score_highway(const Game& game)
+{
+	for (int i = 0; i < game.game_map->height; ++i)
+		for (int j = 0; j < game.game_map->width; ++j)
+		{
+			grid_score_highway[i][j] = 1.0;
 
+			// If enemy is in contiguous cell, bad score.
+			for (Position& position : game.my_shipyard_or_dropoff_positions())
+			{
+				int distance = game.game_map->calculate_distance_from_axis(game.game_map->cells[i][j].position, position);
+
+				if (distance == 0)
+					grid_score_highway[i][j] = 0.0;
+				else if (distance == 1)
+					grid_score_highway[i][j] = 0.5;
+				else
+					grid_score_highway[i][j] = 1.0;
+			}
+		}
+}
+
+void hlt::Scorer::update_grid_score_inspiration(const Game& game)
+{
+	for (int i = 0; i < game.game_map->height; ++i)
+		for (int j = 0; j < game.game_map->width; ++j)
+			grid_score_inspiration[i][j] = 0;
+
+	int radius = 4;
+
+	for (const auto& player : game.players)
+	{
+		if (player->id == game.my_id)
+			continue;
+
+		for (auto& ship_iterator : player->ships)
+		{
+			for (int i = 0; i < game.game_map->height; ++i)
+				for (int j = 0; j < game.game_map->width; ++j)
+				{
+					int distance = game.distance(ship_iterator.second->position, Position(j, i));
+					if (distance <= radius)
+						grid_score_inspiration[i][j] += 1;
+				}
+		}
+	}
+
+	//log::log_vectorvector(grid_score_inspiration);
+}
 void hlt::Scorer::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position)
 {
 	grid_score_move[position.y][position.x] += 1;
 }
-
 void hlt::Scorer::flush_grid_score(const Position& position)
 {
 	grid_score_move[position.y][position.x] = max(0, grid_score_move[position.y][position.x] - 1);
@@ -59,27 +114,37 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
-			grid_score_extract_smooth[i][j] = 0;
-
 	int radius = game.get_constant("Score: Smoothing radius");
-	int area = 2 * radius * radius + 2 * radius + 1;
+	//int area = 2 * radius * radius + 2 * radius + 1;
 
 	for (int i = 0; i < game.game_map->height; ++i)
 		for (int j = 0; j < game.game_map->width; ++j)
 		{
+			// Initialize to 0
+			grid_score_extract_smooth[i][j] = 0.0;
+
 			// Halite around adds to score
 			for (int k = 0; k <= radius * 2; ++k)
 				for (int l = 0; l <= radius * 2; ++l)
 				{
 					int new_k = (((i - radius + k) % width) + width) % width;
 					int new_l = (((j - radius + l) % height) + height) % height;
+					double halite = (double)game.mapcell(new_k, new_l)->halite;
 
-					if (game.distance(Position(i, j), Position(new_k, new_l)) <= radius)
-						grid_score_extract_smooth[i][j] += (double)game.mapcell(new_k, new_l)->halite / (double)area;
+					if (halite < 100)
+						halite = halite * halite / 100.0;
+
+					//if (halite < 50)
+					//	halite = halite * halite / 100.0;
+
+					int distance = game.distance(Position(i, j), Position(new_k, new_l));
+					if (distance <= radius)
+						grid_score_extract_smooth[i][j] += halite / max((double)distance, 1.0);
 				}
+
+			// Any structure has 0 score
+			if (game.mapcell(Position(j, i))->has_structure())
+				grid_score_extract_smooth[i][j] = 0.0;
 
 			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
 		}
@@ -88,35 +153,46 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	//log::log_vectorvector(grid_score_extract_smooth);
 }
 
-pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game) const
+pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	//pair<vector<vector<int>>, vector<vector<int>>> all_costs = game.pathfinder.dijkstra_costs(game.mapcell(ship), game);
-	//vector<vector<int>> move_costs = all_costs.first;
-	//vector<vector<int>> move_turns = all_costs.second;
 	vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
 
-	double max_score = -999999.0;
+	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
-	double halite = 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 		{
-			halite = grid_score_extract_smooth[i][j];
+			double halite = grid_score_extract_smooth[i][j];
+			double distance_cell_ship = (double)game.distance(ship->position, Position(j, i));
+			double distance_cell_shipyard = (double)game.distance(game.get_closest_shipyard_or_dropoff(Position(j, i)), Position(j, i));
 
-			if (halite <= 100.0)
-				halite *= halite / 100.0;
+			//total_score[i][j] =
+			//	//max(
+			//		// Score of ressources taken cannot be > cargo
+			//		halite
+			//		// Cost in halite of going there
+			//		// - (double)game.distance_manager.ship_distances.at(ship)[i][j]
+			//		// Cost of going back to base
+			//		// - (double)game.distance_manager.shipyard_or_dropoff_distances.at(game.get_closest_shipyard_or_dropoff(Position(j, i)))[i][j]
+			//		// Cost in halite of going there
+			//		- linear_decrease(game.turn_number, 0, 400, 0.0, 300.0) * (distance_cell_ship + distance_cell_shipyard);
+			//		//, 0.0);
 
 			total_score[i][j] =
-				// Score of ressources taken cannot be > cargo
-				min(halite, 950.0 - (double)ship->halite)
+				//max(
+					// Score of ressources taken cannot be > cargo
+				halite /
 				// Cost in halite of going there
-				- linear_decrease(game.turn_number, 0, 400, 0.0, 8.0) * (double)game.distance(ship->position, Position(j, i))
-				// Cost in halite of going back to base
-				- linear_decrease(game.turn_number, 0, 400, 0.0, 8.0) * (double)game.distance(game.get_closest_shipyard_or_dropoff(ship), Position(j, i));
+				// - (double)game.distance_manager.ship_distances.at(ship)[i][j]
+				// Cost of going back to base
+				// - (double)game.distance_manager.shipyard_or_dropoff_distances.at(game.get_closest_shipyard_or_dropoff(Position(j, i)))[i][j]
+				// Cost in halite of going there
+				(double)pow(1 + distance_cell_ship + distance_cell_shipyard, 1);
+			//, 0.0);
 
 			if (total_score[i][j] > max_score)
 			{
@@ -126,23 +202,61 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 			}
 		}
 
-	//if ((game.turn_number == 233))
-	//{
-	//	log::log(ship->to_string_ship());
+	if (verbose)
+	{
+		log::log(ship->to_string_ship());
 
-	//	log::log("Grid Score Extract");
-	//	log::log_vectorvector(grid_score_extract_smooth);
+		log::log("Grid Score Extract");
+		log::log_vectorvector(grid_score_extract_smooth);
 
-	//	log::log("Total Score");
-	//	log::log_vectorvector(total_score);
-	//}
-	
-	//log::log("i:" + to_string(max_i) + ", j:" + to_string(max_j));
+		log::log("Total Score");
+		log::log_vectorvector(total_score);
+	}
 
 	return make_pair(game.mapcell(max_i, max_j), max_score);
 }
 
-void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell* target_cell, const Game& game)
+pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> shipyard, vector<Position> dropoffs, const Game& game) const
+{
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
+
+	double max_score = -999999.0;
+	int max_i = 0, max_j = 0;
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+		{
+			// Find distance to closest shipyards
+			int distance = game.distance(game.my_shipyard_position(), Position(j, i));
+
+			for (Position& shipyard_or_dropoff : dropoffs)
+				distance = min(game.distance(shipyard_or_dropoff, Position(j, i)), distance);
+			
+			total_score[i][j] = grid_score_extract_smooth[i][j] * butterfly(distance, 0.2 * width, 0.5 * width, width, 0.0, 1.0, 0.0);
+
+			// Not too close from enemy bases
+			//for (Position& enemy_shipyard_or_dropoff : game.enemy_shipyard_or_dropoff_positions())
+			//	if (game.distance(enemy_shipyard_or_dropoff, Position(j, i)) <= 10)
+			//		total_score[i][j] = 0.0;
+
+			if (total_score[i][j] > max_score)
+			{
+				max_score = total_score[i][j];
+				max_i = i;
+				max_j = j;
+			}
+		}
+
+	log::log("Total Score");
+	log::log_vectorvector(total_score);
+
+	return make_pair(game.mapcell(max_i, max_j), max_score);
+}
+
+void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell* target_cell, int radius, const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
@@ -150,7 +264,6 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	int target_x = target_cell->position.x;
 	int target_y = target_cell->position.y;
 
-	int radius = game.get_constant("Score: Brute force reach");
 	int area = 2 * radius * radius + 2 * radius + 1;
 
 	for (int i = 0; i <= radius * 2; ++i)
@@ -161,7 +274,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 
 			// When ship assigned to an area, remove missing cargo from the zone's score in radius around.
 			if (game.distance(target_cell->position, Position(new_x, new_y)) <= radius)
-				grid_score_extract_smooth[new_y][new_x] -= (950.0 - (double)ship->halite) / (double)area / (double)game.get_constant("Score: Area Discount");
+				grid_score_extract_smooth[new_y][new_x] -= (double)ship->missing_halite() / (double)area;
 
 			grid_score_extract_smooth[new_y][new_x] = max(0.0, grid_score_extract_smooth[new_y][new_x]);
 		}
@@ -172,10 +285,6 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 
 void hlt::Scorer::decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, const Game& game)
 {
-	//grid_score_extract[target_cell->position.y][target_cell->position.x] -= (1000.0 - (double)ship->halite) * 0.9;
-	grid_score_extract[target_cell->position.y][target_cell->position.x] = -999.0;
-
-	//log::log("Grid Score Extract");
-	//log::log_vectorvector(grid_score_extract);
+	grid_score_extract_smooth[target_cell->position.y][target_cell->position.x] = 0.0;
 }
 
