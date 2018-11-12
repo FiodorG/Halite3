@@ -4,31 +4,34 @@
 using namespace hlt;
 using namespace std;
 
-void ObjectiveManager::create_dropoff_objective(const Game& game)
+vector<Objective> ObjectiveManager::create_dropoff_objectives(const Game& game)
 {
-	if (!should_spawn_dropoff(game))
-		return;
+	//log::log("Turn since last:" + to_string(turn_since_last_dropoff));
+	//log::log("Dropoff number: " + to_string(game.my_dropoff_number()) + ", allowed: " + to_string(game.max_allowed_dropoffs()));
+	//for (auto& dropoff : game.me->dropoffs)
+	//	log::log(dropoff.second->to_string_dropoff());
+
+	if (!should_spawn_dropoff(game, vector<Objective>()))
+		return vector<Objective>();
 
 	vector<Position> dropoffs;
 	dropoffs.push_back(game.my_shipyard_position());
 	for (auto& dropoff : game.me->dropoffs)
 		dropoffs.push_back(dropoff.second->position);
 
-	for (int i = game.my_dropoff_number(); i < game.max_allowed_dropoffs(); i++)
-	{
-		pair<MapCell*, double> action = game.scorer.find_best_dropoff_cell(game.me->shipyard, dropoffs, game);
-		dropoffs.push_back(action.first->position);
-		objectives_dropoffs.push_back(Objective(0, Objective_Type::MAKE_DROPOFF, action.first->position));
-		log::log("Dropoff objective: " + action.first->position.to_string_position() + " with score " + to_string(action.second));
-		break;
-	}
+	pair<MapCell*, double> action = game.scorer.find_best_dropoff_cell(game.me->shipyard, dropoffs, game);
+
+	log::log("Dropoff objective: " + action.first->position.to_string_position() + " with score " + to_string(action.second));
+
+	return vector<Objective>{Objective(0, Objective_Type::MAKE_DROPOFF, action.first->position)};
 }
 
-bool ObjectiveManager::should_spawn_dropoff(const Game& game)
+bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> objectives_dropoffs)
 {
 	if (
 		(game.my_ships_number() >= 20) &&
-		(turn_since_last_dropoff >= 100)
+		(turn_since_last_dropoff >= 100) && 
+		(game.my_dropoff_number() < game.max_allowed_dropoffs())
 	)
 	{
 		return true;
@@ -41,8 +44,9 @@ bool ObjectiveManager::can_spawn_dropoff(const shared_ptr<Ship> ship, Game& game
 {
 	if (
 		ship->is_objective(Objective_Type::MAKE_DROPOFF) &&
-		(game.distance_from_objective(ship) <= 1)  &&
-		(game.me->halite + ship->halite + game.mapcell(ship)->halite >= 5 + constants::DROPOFF_COST)
+		(game.distance_from_objective(ship) <= 2)  &&
+		(game.me->halite + ship->halite + game.mapcell(ship)->halite >= 5 + constants::DROPOFF_COST) && 
+		!game.mapcell(ship->position)->has_structure()
 		)
 	{
 		return true;
@@ -61,7 +65,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 	{
 		Stopwatch s("Dropoffs");
 
-		create_dropoff_objective(game);
+		vector<Objective> objectives_dropoffs = create_dropoff_objectives(game);
 		int objective_id = -1;
 		for (Objective& dropoff_objective : objectives_dropoffs)
 		{
@@ -75,9 +79,10 @@ void ObjectiveManager::assign_objectives(Game& game)
 				log::log(closest_ship->to_string_ship() + " is close to target dropoff, reserved halite " + to_string(game.reserved_halite));
 			}
 
-			if (game.distance_from_objective(closest_ship) <= 5)
+			if ((game.distance_from_objective(closest_ship) <= 5) && (game.me->halite + closest_ship->halite + game.halite_on_position(closest_ship->position) >= 3000))
 			{
-				game.me->dropoffs[objective_id--] = make_shared<Dropoff>(Dropoff(game.my_id, -1, dropoff_objective.target_position.x, dropoff_objective.target_position.y));
+				bool is_fake = (game.me->halite + closest_ship->halite + game.halite_on_position(closest_ship->position) < constants::DROPOFF_COST);
+				game.me->dropoffs[objective_id--] = make_shared<Dropoff>(Dropoff(game.my_id, -1, dropoff_objective.target_position.x, dropoff_objective.target_position.y, is_fake));
 				log::log(closest_ship->to_string_ship() + " is close to target dropoff, placed dropoff");
 			}
 
@@ -115,7 +120,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 		if ((ship->is_objective(Objective_Type::BACK_TO_BASE)) || (ship->is_full(0.9)))
 		{
-			game.assign_objective(ship, Objective_Type::BACK_TO_BASE, game.get_closest_shipyard_or_dropoff(ship));
+			game.assign_objective(ship, Objective_Type::BACK_TO_BASE, game.get_closest_shipyard_or_dropoff(ship, false));
 			ship->set_assigned();
 		}
 	}
@@ -212,5 +217,4 @@ void ObjectiveManager::get_ordered_ships(Game& game)
 void ObjectiveManager::flush_objectives()
 {
 	ships_ordered.clear();
-	objectives_dropoffs.clear();
 }

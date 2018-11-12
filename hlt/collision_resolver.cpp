@@ -127,7 +127,6 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 	log::log("Collisions:");
 	for (auto& ship : collisions_ordered)
 		log::log(ship->to_string_ship() + " moving to " + collisions[ship].to_string_position());
-	log::log("");
 
 	// We try to edit the first ship that comes up, no order.
 	for (auto& ship : collisions_ordered)

@@ -40,6 +40,7 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 	scorer.grid_score_move = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 	scorer.grid_score_highway = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
+	scorer.grid_score_dropoff = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract_smooth = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_inspiration = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 }
@@ -104,6 +105,7 @@ void hlt::Game::update_frame()
 	// Scorer
 	scorer.update_grid_score_move(*this);
 	scorer.update_grid_score_extract(*this);
+	scorer.update_grid_score_dropoff(*this);
 	scorer.update_grid_score_highway(*this);
 	scorer.update_grid_score_inspiration(*this);
 

@@ -35,7 +35,9 @@ int main(int argc, char* argv[])
 	constants["Score: Brute force reach"] = 4;
 	constants["Score: Smoothing radius"] = 3;
 
-	constants["Test"] = 1;
+	constants["Dropoff: No Go Zone"] = 7;
 
-	return mybot_internal("GSBot2", constants, rng_seed);
+	constants["Test"] = 0;
+
+	return mybot_internal("GSBot1", constants, rng_seed);
 }
