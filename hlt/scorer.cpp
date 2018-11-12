@@ -142,7 +142,7 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				grid_score_dropoff[i][j] = 0.0;
 		}
 
-	log::log_vectorvector(grid_score_dropoff);
+	//log::log_vectorvector(grid_score_dropoff);
 }
 void hlt::Scorer::update_grid_score_extract(const Game& game)
 {
@@ -284,6 +284,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	int target_y = target_cell->position.y;
 
 	int area = 2 * radius * radius + 2 * radius + 1;
+	double halite_to_decrease = (double)ship->missing_halite() / (double)area;
 
 	for (int i = 0; i <= radius * 2; ++i)
 		for (int j = 0; j <= radius * 2; ++j)
@@ -293,7 +294,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 
 			// When ship assigned to an area, remove missing cargo from the zone's score in radius around.
 			if (game.distance(target_cell->position, Position(new_x, new_y)) <= radius)
-				grid_score_extract_smooth[new_y][new_x] -= (double)ship->missing_halite() / (double)area;
+				grid_score_extract_smooth[new_y][new_x] -= halite_to_decrease;
 
 			grid_score_extract_smooth[new_y][new_x] = max(0.0, grid_score_extract_smooth[new_y][new_x]);
 		}
@@ -302,8 +303,8 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	//log::log_vectorvector(grid_score_extract);
 }
 
-void hlt::Scorer::decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, const Game& game)
+void hlt::Scorer::decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, double mult, const Game& game)
 {
-	grid_score_extract_smooth[target_cell->position.y][target_cell->position.x] = 0.0;
+	grid_score_extract_smooth[target_cell->position.y][target_cell->position.x] *= mult;
 }
 

@@ -25,6 +25,7 @@ namespace hlt
 		void flush_objectives();
 
 		// Dropoffs
+		int max_allowed_dropoffs(const Game& game) const;
 		bool should_spawn_dropoff(const Game& game, vector<Objective> objectives_dropoffs);
 		bool can_spawn_dropoff(const shared_ptr<Ship> ship, Game& game);
 		vector<Objective> create_dropoff_objectives(const Game& game);

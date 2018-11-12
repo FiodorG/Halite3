@@ -114,6 +114,8 @@ void hlt::Game::update_frame()
 	for (vector<MapCell>& row : game_map->cells)
 		for (MapCell& cell : row)
 			scorer.halite_total += cell.halite;
+	if (turn_number <= 1)
+		scorer.halite_initial = scorer.halite_total;
 
 	scorer.halite_percentile = 0;
 	int i = 0;
