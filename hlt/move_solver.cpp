@@ -10,62 +10,20 @@ using namespace hlt;
 using namespace std;
 
 
-//unordered_map<Objective_Type, vector<shared_ptr<Ship>>> MoveSolver::split_ships_without_actions(const Game& game) const
-//{
-//	unordered_map<Objective_Type, vector<shared_ptr<Ship>>> ships_without_actions_split;
-//
-//	for (const shared_ptr<Ship>& ship : game.me->my_ships)
-//		ships_without_actions_split[ship->objective_type()].push_back(ship);
-//
-//	// This calls the default constructors if keys are not present
-//	ships_without_actions_split[Objective_Type::MAKE_DROPOFF];
-//	ships_without_actions_split[Objective_Type::SUICIDE_ON_BASE];
-//	ships_without_actions_split[Objective_Type::BACK_TO_BASE];
-//	ships_without_actions_split[Objective_Type::EXTRACT_ZONE];
-//
-//	return ships_without_actions_split;
-//}
-//vector<shared_ptr<Ship>> MoveSolver::get_ships_without_actions(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split) const
-//{
-//	if (ships_without_actions_split.at(Objective_Type::MAKE_DROPOFF).size())
-//		return ships_without_actions_split.at(Objective_Type::MAKE_DROPOFF);
-//	else if (ships_without_actions_split.at(Objective_Type::SUICIDE_ON_BASE).size())
-//		return ships_without_actions_split.at(Objective_Type::SUICIDE_ON_BASE);
-//	else if (ships_without_actions_split.at(Objective_Type::BACK_TO_BASE).size())
-//		return ships_without_actions_split.at(Objective_Type::BACK_TO_BASE);
-//	else if (ships_without_actions_split.at(Objective_Type::EXTRACT_ZONE).size())
-//		return ships_without_actions_split.at(Objective_Type::EXTRACT_ZONE);
-//	else
-//		return vector<shared_ptr<Ship>>();
-//}
-//void MoveSolver::remove_ship_from_available(unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split, const shared_ptr<Ship>& ship)
-//{
-//	Objective_Type objective_type = ship->objective_type();
-//
-//	if (objective_type == Objective_Type::EXTRACT)
-//		objective_type = Objective_Type::EXTRACT_ZONE;
-//
-//	ships_without_actions_split[objective_type].erase(
-//		remove(ships_without_actions_split[objective_type].begin(), ships_without_actions_split[objective_type].end(), ship),
-//		ships_without_actions_split[objective_type].end()
-//	);
-//}
-//int MoveSolver::ships_without_actions_size(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>> ships_without_actions) const
-//{
-//	int size = 0;
-//	for (const auto& ships : ships_without_actions)
-//		size += ships.second.size();
-//
-//	return size;
-//}
-
 vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) const
 {
 	vector<Direction> directions = { Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST, Direction::STILL };
 
 	vector<vector<Direction>> all_path_permutations((int)pow(5, move_number));
 
-	if (move_number == 3)
+	if (move_number == 2)
+	{
+		int i = 0;
+		for (Direction direction1 : directions)
+			for (Direction direction2 : directions)
+					all_path_permutations[i++] = { direction1, direction2 };
+	}
+	else if (move_number == 3)
 	{
 		int i = 0;
 		for (Direction direction1 : directions)
@@ -189,28 +147,6 @@ pair<Position, int> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship, co
 
 	int best_score_index = distance(avg_cargo.begin(), max_element(avg_cargo.begin(), avg_cargo.end()));
 
-	// Find best move among the computed ones
-	//auto max_score = max_element(final_cargo.begin(), final_cargo.end());
-	//int missing_halite = ship->missing_halite();
-
-	//int best_score_index = 0;
-	//if (*max_score >= missing_halite)
-	//{
-	//	// If we can fill cargo, do that in min moves
-	//	int best_moves = 999;
-	//	for (int i = 0; i < size; i++)
-	//		if ((final_cargo[i] >= missing_halite) && (moves[i] < best_moves))
-	//		{
-	//			best_moves = moves[i];
-	//			best_score_index = i;
-	//		}
-	//}
-	//else
-	//{
-	//	// If we can't fill cargo, use best move
-	//	best_score_index = distance(final_cargo.begin(), max_element(final_cargo.begin(), final_cargo.end()));
-	//}
-
 	//log::log("Scores");
 	//for (auto score : scores)
 	//	log::log(to_string(score));
@@ -230,7 +166,13 @@ pair<Position, int> MoveSolver::find_best_action(shared_ptr<Ship> ship, const Ga
 	pair<Position, int> best_move;
 
 	if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
-		best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
+	{
+		// If not enough halite, extract around base target position
+		if (game.distance(ship->position, ship->target_position()) <= 2)
+			best_move = find_best_extract_move(ship, game, 2);
+		else
+			best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
+	}
 
 	else if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
 		best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
@@ -238,7 +180,7 @@ pair<Position, int> MoveSolver::find_best_action(shared_ptr<Ship> ship, const Ga
 	else if (ship->is_objective(Objective_Type::BACK_TO_BASE))
 		best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
 
-	else 
+	else
 	{
 		int reach = (game.my_ships_number() <= 15) ? 5 : 4;
 

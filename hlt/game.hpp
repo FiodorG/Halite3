@@ -214,23 +214,45 @@ namespace hlt
 			return positions;
 		}
 		shared_ptr<Ship> ship_on_shipyard() const { return game_map->at(my_shipyard_position())->ship; }
-		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship) const
+		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship, bool with_fakes = true) const
 		{
-			return get_closest_shipyard_or_dropoff(ship->position);
+			return get_closest_shipyard_or_dropoff(ship->position, with_fakes);
 		}
-		Position get_closest_shipyard_or_dropoff(const Position& position) const
+		Position get_closest_shipyard_or_dropoff(const Position& position, bool with_fakes = true) const
 		{
 			int min_distance = game_map->calculate_distance(position, my_shipyard_position());
 			Position closest_shipyard = my_shipyard_position();
 
 			for (auto& dropoff_iterator : me->dropoffs)
 			{
+				if ((!with_fakes) && (dropoff_iterator.second->fake))
+					continue;
+
 				int distance = game_map->calculate_distance(position, dropoff_iterator.second->position);
 
 				if (distance <= min_distance)
 				{
 					min_distance = distance;
 					closest_shipyard = dropoff_iterator.second->position;
+				}
+			}
+
+			return closest_shipyard;
+		}
+		Position get_closest_enemy_shipyard_or_dropoff(const Position& position) const
+		{
+			int min_distance = INT_MAX;
+			Position closest_shipyard = my_shipyard_position();
+			vector<Position> enemy_positions = enemy_shipyard_or_dropoff_positions();
+
+			for (auto& enemy_position : enemy_positions)
+			{
+				int distance = game_map->calculate_distance(position, enemy_position);
+
+				if (distance <= min_distance)
+				{
+					min_distance = distance;
+					closest_shipyard = enemy_position;
 				}
 			}
 

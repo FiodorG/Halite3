@@ -19,6 +19,7 @@ namespace hlt
 		vector<vector<double>> grid_score_highway;
 		vector<vector<int>> grid_score_move;
 		vector<vector<double>> grid_score_extract;
+		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
 		vector<vector<int>> grid_score_inspiration;
 		int halite_total;
@@ -37,6 +38,7 @@ namespace hlt
 		// Strategic extraction scorer
 		void update_grid_score_inspiration(const Game& game);
 		void update_grid_score_extract(const Game& game);
+		void update_grid_score_dropoff(const Game& game);
 		double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
 		double get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
 

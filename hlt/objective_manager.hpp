@@ -16,7 +16,6 @@ namespace hlt
 	{
 		public:
 		vector<shared_ptr<Ship>> ships_ordered;
-		vector<Objective> objectives_dropoffs;
 		int turn_since_last_dropoff;
 
 		ObjectiveManager() : turn_since_last_dropoff(0) {}
@@ -26,8 +25,8 @@ namespace hlt
 		void flush_objectives();
 
 		// Dropoffs
-		bool should_spawn_dropoff(const Game& game);
+		bool should_spawn_dropoff(const Game& game, vector<Objective> objectives_dropoffs);
 		bool can_spawn_dropoff(const shared_ptr<Ship> ship, Game& game);
-		void create_dropoff_objective(const Game& game);
+		vector<Objective> create_dropoff_objectives(const Game& game);
 	};
 }

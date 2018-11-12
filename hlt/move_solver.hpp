@@ -22,12 +22,14 @@ namespace hlt
 	class MoveSolver
 	{
 		public:
+		vector<vector<Direction>> all_path_permutations_2;
 		vector<vector<Direction>> all_path_permutations_3;
 		vector<vector<Direction>> all_path_permutations_4;
 		vector<vector<Direction>> all_path_permutations_5;
 
 		MoveSolver() 
 		{
+			all_path_permutations_2 = get_all_permutations(2);
 			all_path_permutations_3 = get_all_permutations(3);
 			all_path_permutations_4 = get_all_permutations(4);
 			all_path_permutations_5 = get_all_permutations(5);
@@ -37,6 +39,8 @@ namespace hlt
 		{
 			switch (reach)
 			{
+			case 2:
+				return &all_path_permutations_2;
 			case 3:
 				return &all_path_permutations_3;
 			case 4:
@@ -52,6 +56,8 @@ namespace hlt
 		{
 			switch (reach)
 			{
+			case 2:
+				return all_path_permutations_2[best_score_index][best_score_move];
 			case 3:
 				return all_path_permutations_3[best_score_index][best_score_move];
 			case 4:
@@ -63,11 +69,6 @@ namespace hlt
 				exit(1);
 			}
 		}
-
-		//unordered_map<Objective_Type, vector<shared_ptr<Ship>>> split_ships_without_actions(const Game& game) const;
-		//vector<shared_ptr<Ship>> get_ships_without_actions(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split) const;
-		//void remove_ship_from_available(unordered_map<Objective_Type, vector<shared_ptr<Ship>>>& ships_without_actions_split, const shared_ptr<Ship>& ship);
-		//int ships_without_actions_size(const unordered_map<Objective_Type, vector<shared_ptr<Ship>>> ships_without_actions) const;
 
 		pair<Position, int> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
 		pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
