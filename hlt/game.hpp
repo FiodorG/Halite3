@@ -19,6 +19,7 @@
 #include <math.h>
 #include <utility>
 #include <cfloat>
+#include <climits>
 
 using namespace std;
 
@@ -101,33 +102,6 @@ namespace hlt
 				my_ships_number() <= max_allowed_ships()
 				)
 				command_queue.push_back(me->shipyard->spawn());
-		}
-
-		int max_allowed_dropoffs() const
-		{
-			int allowed_dropoffs = 0;
-			switch (game_map->width)
-			{
-			case 32:
-				allowed_dropoffs = (players.size() == 2) ? 1 : 0;
-				break;
-			case 40:
-				allowed_dropoffs = 1;
-				break;
-			case 48:
-				allowed_dropoffs = 2;
-				break;
-			case 56:
-				allowed_dropoffs = (players.size() == 2) ? 3 : 2;
-				break;
-			case 64:
-				allowed_dropoffs = (players.size() == 2) ? 3 : 2;
-				break;
-			default:
-				log::log("Unknown map width");
-				exit(1);
-			}
-			return allowed_dropoffs;
 		}
 
 		int max_allowed_ships() const

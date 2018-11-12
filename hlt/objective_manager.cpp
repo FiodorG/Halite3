@@ -4,6 +4,37 @@
 using namespace hlt;
 using namespace std;
 
+
+int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
+{
+	int max_dropoffs = 0;
+	switch (game.game_map->width)
+	{
+	case 32:
+		max_dropoffs = (game.players.size() == 2) ? 1 : 0;
+		break;
+	case 40:
+		max_dropoffs = 1;
+		break;
+	case 48:
+		max_dropoffs = 2;
+		break;
+	case 56:
+		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
+		break;
+	case 64:
+		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
+		break;
+	default:
+		log::log("Unknown map width");
+		exit(1);
+	}
+
+	int base_dropoffs = min((int)(max((double)game.scorer.halite_initial - 100000.0, 0.0) / 100000.0), max_dropoffs);
+
+	return base_dropoffs;
+}
+
 vector<Objective> ObjectiveManager::create_dropoff_objectives(const Game& game)
 {
 	//log::log("Turn since last:" + to_string(turn_since_last_dropoff));
@@ -28,14 +59,15 @@ vector<Objective> ObjectiveManager::create_dropoff_objectives(const Game& game)
 
 bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> objectives_dropoffs)
 {
-	if (
-		(game.my_ships_number() >= 20) &&
-		(turn_since_last_dropoff >= 100) && 
-		(game.my_dropoff_number() < game.max_allowed_dropoffs())
-	)
-	{
-		return true;
-	}
+	if (game.my_dropoff_number() >= max_allowed_dropoffs(game))
+		return false;
+
+	if (game.my_dropoff_number() == 0)
+		return (game.my_ships_number() >= 20);
+	else if (game.my_dropoff_number() == 1)
+		return (game.my_ships_number() >= 40);
+	else if (game.my_dropoff_number() == 2)
+		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 80);
 
 	return false;
 }
@@ -49,8 +81,8 @@ bool ObjectiveManager::can_spawn_dropoff(const shared_ptr<Ship> ship, Game& game
 		!game.mapcell(ship->position)->has_structure()
 		)
 	{
-		return true;
 		game.objective_manager.turn_since_last_dropoff = 0;
+		return true;
 	}
 
 	return false;
@@ -64,6 +96,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 	*/
 	{
 		Stopwatch s("Dropoffs");
+		log::log("Max allowed dropoff: " + to_string(max_allowed_dropoffs(game)));
 
 		vector<Objective> objectives_dropoffs = create_dropoff_objectives(game);
 		int objective_id = -1;
@@ -157,9 +190,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 			log::log(best_ship->to_string_ship() + " assigned to area " + best_cell->position.to_string_position() + " with score " + to_string(best_score));
 
-			if (game.get_constant("Test"))
-				game.scorer.decreases_score_in_target_cell(best_ship, best_cell, game);
-
+			game.scorer.decreases_score_in_target_cell(best_ship, best_cell, 0.5, game);
 			game.scorer.decreases_score_in_target_area(best_ship, best_cell, game.get_constant("Score: Brute force reach"), game);
 			game.assign_objective(best_ship, Objective_Type::EXTRACT_ZONE, best_cell->position, best_score);
 			ships_without_objectives.erase(best_ship);

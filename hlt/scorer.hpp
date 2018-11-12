@@ -22,10 +22,11 @@ namespace hlt
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
 		vector<vector<int>> grid_score_inspiration;
+		int halite_initial;
 		int halite_total;
 		int halite_percentile;
 
-		Scorer() : halite_total(0), halite_percentile(0) {};
+		Scorer() : halite_total(0), halite_percentile(0), halite_initial(0) {};
 		
 		// Move scorer
 		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
@@ -48,7 +49,7 @@ namespace hlt
 
 		pair<MapCell*, double> find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
 		void decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell* target_cell, int radius, const Game& game);
-		void decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, const Game& game);
+		void decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, double mult, const Game& game);
 
 		// Shipyard construction
 		pair<MapCell*, double> find_best_dropoff_cell(shared_ptr<Shipyard> shipyard, vector<Position> dropoffs, const Game& game) const;
