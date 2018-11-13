@@ -29,15 +29,18 @@ namespace hlt
 			Compute ship moves
 			**********************
 			*/
-			for (int i = 0; i < 1; i++)
 			{
-				for (auto& ship : game.objective_manager.ships_ordered)
-				{
-					pair<Position, int> action = game.move_solver.find_best_action(ship, game);
+				Stopwatch s("Generate moves");
 
-					ship->set_objective_position(action.first);
-					game.assign_ship_to_target_position(ship, action.first);
-					log::log(ship->to_string_ship() + " goes to " + action.first.to_string_position());
+				for (int i = 0; i < 1; i++)
+				{
+					for (auto& ship : game.objective_manager.ships_ordered)
+					{
+						pair<Position, double> action = game.move_solver.find_best_action(ship, game);
+
+						//ship->set_objective_position(action.first);
+						game.assign_ship_to_target_position(ship, action.first);
+					}
 				}
 			}
 
@@ -45,7 +48,18 @@ namespace hlt
 			//if (game.me->ships.count(shipid))
 			//	game.scorer.find_best_objective_cell(game.me->ships[shipid], game, (game.turn_number == 13));
 
-			//if (game.turn_number == 200)
+			//shared_ptr<Ship> ship = make_shared<Ship>(Ship(game.my_id, 0, 10, 24, 3));
+			//game.assign_objective(ship, Objective_Type::EXTRACT_ZONE, ship->position);
+
+			//game.move_solver.score_path2(
+			//	ship,
+			//	vector<Direction>{Direction::STILL, Direction::WEST, Direction::STILL, Direction::STILL, Direction::STILL},
+			//	5,
+			//	game
+			//	);
+			//exit(1);
+
+			//if (game.turn_number == 65)
 			//	exit(1);
 
 			game.fudge_ship_if_base_blocked();

@@ -70,10 +70,14 @@ namespace hlt
 			}
 		}
 
-		pair<Position, int> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
-		pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
+		pair<Position, double> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
+		//pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
+
+		double score_path2(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
+		pair<Position, double> find_best_extract_move2(shared_ptr<Ship> ship, const Game& game, int reach) const;
+
 		bool valid_move(const Position& position, const Game& game) const;
-		tuple<int, int> score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
+		//tuple<int, int> score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
 		vector<vector<Direction>> get_all_permutations(int move_number) const;
 	};
 }

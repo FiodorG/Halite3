@@ -26,7 +26,7 @@ namespace hlt
 		int halite_total;
 		int halite_percentile;
 
-		Scorer() : halite_total(0), halite_percentile(0), halite_initial(0) {};
+		Scorer() : halite_initial(0), halite_total(0), halite_percentile(0) {};
 		
 		// Move scorer
 		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
