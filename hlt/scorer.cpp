@@ -284,7 +284,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	int target_y = target_cell->position.y;
 
 	int area = 2 * radius * radius + 2 * radius + 1;
-	double halite_to_decrease = (double)ship->missing_halite() / (double)area;
+	double halite_to_decrease = (double)ship->missing_halite() / (double)area * 3.0;
 
 	for (int i = 0; i <= radius * 2; ++i)
 		for (int j = 0; j <= radius * 2; ++j)

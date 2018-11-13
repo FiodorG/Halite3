@@ -30,6 +30,7 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		exit(1);
 	}
 
+	// dropoff per tranche of 100k above 100k, capped at value above
 	int base_dropoffs = min((int)(max((double)game.scorer.halite_initial - 100000.0, 0.0) / 100000.0), max_dropoffs);
 
 	return base_dropoffs;
@@ -190,7 +191,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 			log::log(best_ship->to_string_ship() + " assigned to area " + best_cell->position.to_string_position() + " with score " + to_string(best_score));
 
-			game.scorer.decreases_score_in_target_cell(best_ship, best_cell, 0.5, game);
+			game.scorer.decreases_score_in_target_cell(best_ship, best_cell, 0.0, game);
 			game.scorer.decreases_score_in_target_area(best_ship, best_cell, game.get_constant("Score: Brute force reach"), game);
 			game.assign_objective(best_ship, Objective_Type::EXTRACT_ZONE, best_cell->position, best_score);
 			ships_without_objectives.erase(best_ship);
@@ -200,8 +201,6 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 void ObjectiveManager::get_ordered_ships(Game& game)
 {
-	Stopwatch s("Order ships");
-
 	PriorityQueue<shared_ptr<Ship>, double> ships_dropoff;
 	for (const shared_ptr<Ship>& ship : game.me->my_ships)
 		if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
