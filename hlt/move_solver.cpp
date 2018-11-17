@@ -184,6 +184,15 @@ double MoveSolver::score_path(
 	return score;
 }
 
+bool is_null_path(const vector<Direction>& path)
+{
+	for (Direction direction : path)
+		if (direction != Direction::STILL)
+			return false;
+
+	return true;
+}
+
 pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const
 {
 	vector<double> scores((int)pow(5, reach), 0.0);
@@ -210,6 +219,20 @@ pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship,
 		best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
 	}
 
+	// If move is to stay still, try around a bit
+	if (is_null_path((*path_permutations)[best_score_index]))
+	{
+		log::log("Null path computed for " + ship->to_string_ship() + " trying with margin of 1.");
+
+		i = 0;
+		scores = vector<double>((int)pow(5, reach), 0.0);
+		for (const vector<Direction>& path : *path_permutations)
+			scores[i++] = score_path(ship, path, reach, distance_margin + 1, game);
+
+		best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
+		best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
+	}
+
 	string line = "";
 	for (Direction direction : (*path_permutations)[best_score_index])
 		line += to_string_direction(direction);
@@ -221,6 +244,8 @@ pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship,
 pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const Game& game) const
 {
 	pair<Position, double> best_move;
+
+	// check here that ship can move...
 
 	if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
 	{

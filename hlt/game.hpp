@@ -110,29 +110,33 @@ namespace hlt
 			//int number_players = min((int)players.size(), 3);
 			//return (int)ceil((double)total_halite / (double)number_players / 900.0 / 5.0);
 
-			int allowed_ships = 0;
+			int max_allowed_ships = 0;
 			switch (game_map->width)
 			{
 			case 32:
-				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 32") : get_constant("Max Ships 4p: 32");
+				max_allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 32") : get_constant("Max Ships 4p: 32");
 				break;
 			case 40:
-				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 40") : get_constant("Max Ships 4p: 40");
+				max_allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 40") : get_constant("Max Ships 4p: 40");
 				break;
 			case 48:
-				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 48") : get_constant("Max Ships 4p: 48");
+				max_allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 48") : get_constant("Max Ships 4p: 48");
 				break;
 			case 56:
-				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 56") : get_constant("Max Ships 4p: 56");
+				max_allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 56") : get_constant("Max Ships 4p: 56");
 				break;
 			case 64:
-				allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 64") : get_constant("Max Ships 4p: 64");
+				max_allowed_ships = (players.size() == 2) ? get_constant("Max Ships 2p: 64") : get_constant("Max Ships 4p: 64");
 				break;
 			default:
 				log::log("Unknown map width");
 				exit(1);
 			}
-			return allowed_ships;
+
+			if (players.size() == 4)
+				max_allowed_ships = min(100, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+
+			return max_allowed_ships;
 		}
 
 		void fudge_ship_if_base_blocked();
