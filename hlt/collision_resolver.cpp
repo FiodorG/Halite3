@@ -171,17 +171,6 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 			else
 				game.update_ship_target_position(ship, new_position);
 
-			//Position position_next_turn_old = game.positions_next_turn[ship];
-			//game.assign_ship_to_target_position(ship, ship->target_position());
-			//Position position_next_turn_new = game.positions_next_turn[ship];
-
-			// If no paths have been changed, stop ship
-			/*if (position_next_turn_old == position_next_turn_new)
-			{
-				game.update_ship_target_position(ship, ship->position);
-				log::log("No resolving, stop " + ship->to_string_ship());
-			}*/
-
 			return;
 		}
 	}

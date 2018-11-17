@@ -48,8 +48,12 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::EAST)) ||
 				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::WEST)) ||
 				game.game_map->cells[i][j].is_occupied_by_enemy(game.my_id)
-				)
+			)
 				grid_score_move[i][j] = 9;
+
+			// Shipyard should be accessible all the time.
+			if (game.is_shipyard_or_dropoff(Position(j, i)))
+				grid_score_move[i][j] = 0;
 		}
 }
 void hlt::Scorer::update_grid_score_highway(const Game& game)
