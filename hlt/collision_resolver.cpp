@@ -139,7 +139,8 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 			continue;
 		}
 		// If ship not planning to move, continue
-		if (ship->position == new_position)
+		//if (ship->position == new_position)
+		if (!game.ship_can_move(ship))
 		{
 			continue;
 		}
@@ -156,16 +157,30 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		// Recompute new path otherwise
 		else
 		{
+			log::log("Trying to fudge " + ship->to_string_ship());
 			Position position_next_turn_old = game.positions_next_turn[ship];
-			game.assign_ship_to_target_position(ship, ship->target_position());
-			Position position_next_turn_new = game.positions_next_turn[ship];
-
-			// If no paths have been changed, stop ship
-			if (position_next_turn_old == position_next_turn_new)
+			Position new_position = game.pathfinder.compute_shortest_path(ship->position, ship->target_position(), game);
+			if (
+				position_collides_with_existing(ship, new_position, game) ||
+				(position_next_turn_old == new_position)
+			)
 			{
 				game.update_ship_target_position(ship, ship->position);
 				log::log("No resolving, stop " + ship->to_string_ship());
 			}
+			else
+				game.update_ship_target_position(ship, new_position);
+
+			//Position position_next_turn_old = game.positions_next_turn[ship];
+			//game.assign_ship_to_target_position(ship, ship->target_position());
+			//Position position_next_turn_new = game.positions_next_turn[ship];
+
+			// If no paths have been changed, stop ship
+			/*if (position_next_turn_old == position_next_turn_new)
+			{
+				game.update_ship_target_position(ship, ship->position);
+				log::log("No resolving, stop " + ship->to_string_ship());
+			}*/
 
 			return;
 		}
@@ -231,6 +246,52 @@ void CollisionResolver::exchange_ships(Game& game)
 	}
 }
 
+void CollisionResolver::exchange_ships_on_base(Game& game)
+{
+	list<tuple<shared_ptr<Ship>, shared_ptr<Ship>>> ships_to_switch;
+
+	for (auto& ship_position1 : game.positions_next_turn)
+	{
+		shared_ptr<Ship> ship1 = ship_position1.first;
+		Position position1 = ship_position1.second;
+
+		// Select only ships on shipyard which aren't going to move
+		if ((position1 != ship1->position) || !game.is_shipyard_or_dropoff(ship1->position))
+			continue;
+
+		// Select best returning ship to switch with
+		shared_ptr<Ship> ship_to_switch_with = ship1;
+		int halite_of_ship_to_switch_with = INT_MIN;
+
+		for (auto& ship_position2 : game.positions_next_turn)
+		{
+			shared_ptr<Ship> ship2 = ship_position2.first;
+
+			if (
+				(ship2 != ship1) &&
+				(ship2->is_objective(Objective_Type::BACK_TO_BASE)) && // ship2 is going back to base
+				(game.distance(ship1->position, ship2->position) == 1) && // ships are contiguous
+				(ship2->halite > halite_of_ship_to_switch_with)
+				)
+			{
+				ship_to_switch_with = ship2;
+				halite_of_ship_to_switch_with = ship2->halite;
+			}
+		}
+
+		if (ship1 != ship_to_switch_with)
+			ships_to_switch.push_back(make_tuple(ship1, ship_to_switch_with));
+	}
+
+	// Invert their positions
+	for (auto& ships_tuple : ships_to_switch)
+	{
+		log::log("Exchanging at dropoff " + get<0>(ships_tuple)->to_string_ship() + " and " + get<1>(ships_tuple)->to_string_ship());
+		game.positions_next_turn[get<0>(ships_tuple)] = get<1>(ships_tuple)->position;
+		game.positions_next_turn[get<1>(ships_tuple)] = get<0>(ships_tuple)->position;
+	}
+}
+
 /*
 Main function to resolve moves
 */
@@ -242,32 +303,36 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 	fill_positions_enemies(game);
 
 	// While own collisions exist, edit ships one by one
-	unordered_map<shared_ptr<Ship>, Position> collisions = find_any_collisions(game);
-	int i = 0;
-	while (collisions.size())
+	for (int repeat = 0; repeat < 2; repeat++)
 	{
-		edit_collisions(collisions, game);
-		collisions = find_any_collisions(game);
-		i++;
+		unordered_map<shared_ptr<Ship>, Position> collisions = find_any_collisions(game);
+		int i = 0;
+		while (collisions.size())
+		{
+			edit_collisions(collisions, game);
+			collisions = find_any_collisions(game);
+			i++;
 
-		if (i == 50)
-			break;
-	}
+			if (i == 50)
+				break;
+		}
 
-	// While enemy collisions exist, edit ships one by one
-	unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
-	int j = 0;
-	while (enemy_collisions.size())
-	{
-		edit_collisions(enemy_collisions, game);
-		enemy_collisions = find_any_enemy_collisions(game);
-		j++;
+		// While enemy collisions exist, edit ships one by one
+		unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
+		int j = 0;
+		while (enemy_collisions.size())
+		{
+			edit_collisions(enemy_collisions, game);
+			enemy_collisions = find_any_enemy_collisions(game);
+			j++;
 
-		if (j == 50)
-			break;
+			if (j == 50)
+				break;
+		}
 	}
 	
 	exchange_ships(game);
+	exchange_ships_on_base(game);
 
 	// Generate Command vector
 	for (auto& ship_position : game.positions_next_turn)

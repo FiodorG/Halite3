@@ -20,18 +20,30 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = 2;
 		break;
 	case 56:
-		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
+		max_dropoffs = (game.players.size() == 2) ? 3 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
+		max_dropoffs = (game.players.size() == 2) ? 4 : 4;
 		break;
 	default:
 		log::log("Unknown map width");
 		exit(1);
 	}
 
-	// dropoff per tranche of 100k above 100k, capped at value above
-	int base_dropoffs = min((int)(max((double)game.scorer.halite_initial - 100000.0, 0.0) / 100000.0), max_dropoffs);
+	int base_dropoffs;
+
+	if (game.scorer.halite_initial <= 200000)
+		base_dropoffs = 0;
+	else if (game.scorer.halite_initial <= 300000) // 1 on (200000,300000]
+		base_dropoffs = 1;
+	else if (game.scorer.halite_initial <= 500000) // 2 on (300000,500000]
+		base_dropoffs = 2;
+	else if (game.scorer.halite_initial <= 700000) // 3 on (500000,700000]
+		base_dropoffs = 3;
+	else // 4 above 700000
+		base_dropoffs = 4;
+
+	base_dropoffs = min(base_dropoffs, max_dropoffs);
 
 	return base_dropoffs;
 }
@@ -68,7 +80,7 @@ bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> 
 	else if (game.my_dropoff_number() == 1)
 		return (game.my_ships_number() >= 40);
 	else if (game.my_dropoff_number() == 2)
-		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 80);
+		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 40);
 
 	return false;
 }
@@ -133,7 +145,11 @@ void ObjectiveManager::assign_objectives(Game& game)
 		if (ship->assigned)
 			continue;
 
-		if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE) || (2 * game.game_map->calculate_distance(ship->position, game.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()))
+		if (
+			ship->is_objective(Objective_Type::SUICIDE_ON_BASE) || 
+			(2 * game.game_map->calculate_distance(ship->position, game.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()) ||
+			(game.turns_remaining() <= 6)
+		)
 		{
 			game.assign_objective(ship, Objective_Type::SUICIDE_ON_BASE, game.get_closest_shipyard_or_dropoff(ship));
 			ship->set_assigned();
@@ -212,7 +228,7 @@ void ObjectiveManager::get_ordered_ships(Game& game)
 	PriorityQueue<shared_ptr<Ship>, double> ships_suicide;
 	for (const shared_ptr<Ship>& ship : game.me->my_ships)
 		if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
-			ships_suicide.put(ship, ship->objective->score);
+			ships_suicide.put(ship, -ship->halite);
 
 	while (!ships_suicide.empty())
 		ships_ordered.push_back(ships_suicide.get());
