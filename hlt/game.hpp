@@ -244,7 +244,7 @@ namespace hlt
 
 		int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }
 		int distance_from_objective(shared_ptr<Ship> ship) const { return game_map->calculate_distance(ship->position, ship->target_position()); }
-		bool ship_can_move(shared_ptr<Ship> ship) const { return ship->halite >= (int)floor(0.1 * mapcell(ship)->halite); }
+		bool ship_can_move(shared_ptr<Ship> ship) const { return (mapcell(ship)->halite < 10) || (ship->halite >= (int)floor(0.1 * mapcell(ship)->halite)); }
 		shared_ptr<Ship> closest_ship_to_position(const Position& position) const
 		{
 			shared_ptr<Ship> closest_ship = me->my_ships[0];
@@ -296,11 +296,6 @@ namespace hlt
 			log::log("Total ships: " + to_string(my_ships_number()));
 			log::log("Total halite: " + to_string(scorer.halite_total));
 			log::log("80th pctl halite: " + to_string(scorer.halite_percentile));
-
-			// Log all player's ships
-			//log::log("Ships(" + to_string(my_ships_number()) + "):");
-			//for(auto& ship_iterator : me->ships)
-			//	log::log(ship_iterator.second->to_string_ship());
 		
 			// Log all predicted direction
 			for (auto& ship_position : positions_next_turn)

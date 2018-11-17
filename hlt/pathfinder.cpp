@@ -130,7 +130,7 @@ int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* current_c
 	int move_score = (int)floor(0.1 * current_cell->halite);
 
 	// Free to move on highways!
-	move_score = (int)(move_score * game.scorer.get_grid_score_highway(current_cell->position));
+	//move_score = (int)(move_score * game.scorer.get_grid_score_highway(current_cell->position));
 
 	// Only apply bad score for enemies/allies if they are very close
 	if (game.game_map->calculate_distance(source_cell->position, next_cell->position) <= game.get_constant("A* Radius Ships Seen"))

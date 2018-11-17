@@ -102,11 +102,25 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 }
 void hlt::Scorer::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position)
 {
-	grid_score_move[position.y][position.x] += 1;
+	if (ship->is_objective(Objective_Type::BACK_TO_BASE))
+		grid_score_move[position.y][position.x] = 2;
+	else if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
+		grid_score_move[position.y][position.x] = 2;
+	else if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
+		grid_score_move[position.y][position.x] = 2;
+	else if (ship->is_objective(Objective_Type::EXTRACT_ZONE))
+		grid_score_move[position.y][position.x] = 1;
+	else if (ship->is_objective(Objective_Type::EXTRACT))
+		grid_score_move[position.y][position.x] = 1;
+	else
+	{
+		log::log("ship has unknown Objective");
+		exit(1);
+	}
 }
 void hlt::Scorer::flush_grid_score(const Position& position)
 {
-	grid_score_move[position.y][position.x] = max(0, grid_score_move[position.y][position.x] - 1);
+	grid_score_move[position.y][position.x] = 0;
 }
 
 void hlt::Scorer::update_grid_score_dropoff(const Game& game)
@@ -164,11 +178,13 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					int new_l = (((j - radius + l) % height) + height) % height;
 					double halite = (double)game.mapcell(new_k, new_l)->halite;
 
+					// Weight down small halite cells
 					if (halite < 100)
 						halite = halite * halite / 100.0;
 
-					//if (halite < 50)
-					//	halite = halite * halite / 100.0;
+					// Add bonus for inspiration
+					if (grid_score_inspiration[new_k][new_l] >= 2)
+						halite *= (double)game.get_constant("Score: Inspiration Bonus");
 
 					int distance = game.distance(Position(i, j), Position(new_k, new_l));
 					if (distance <= radius)
@@ -203,17 +219,11 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 			double distance_cell_ship = (double)game.distance(ship->position, Position(j, i));
 			double distance_cell_shipyard = (double)game.distance(game.get_closest_shipyard_or_dropoff(Position(j, i)), Position(j, i));
 
-			total_score[i][j] =
-				//max(
-					// Score of ressources taken cannot be > cargo
-				halite /
-				// Cost in halite of going there
-				// - (double)game.distance_manager.ship_distances.at(ship)[i][j]
-				// Cost of going back to base
-				// - (double)game.distance_manager.shipyard_or_dropoff_distances.at(game.get_closest_shipyard_or_dropoff(Position(j, i)))[i][j]
-				// Cost in halite of going there
-				(double)pow(1 + distance_cell_ship + distance_cell_shipyard, 1);
-			//, 0.0);
+			total_score[i][j] = halite / (double)pow(1 + distance_cell_ship + distance_cell_shipyard, 1);
+
+			// Cannot go to objectives further than turns remaining
+			if ((int)(1.5 * (distance_cell_ship + distance_cell_shipyard)) >= game.turns_remaining())
+				total_score[i][j] = -DBL_MAX;
 
 			if (total_score[i][j] > max_score)
 			{
@@ -284,7 +294,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	int target_y = target_cell->position.y;
 
 	int area = 2 * radius * radius + 2 * radius + 1;
-	double halite_to_decrease = (double)ship->missing_halite() / (double)area * 3.0;
+	double halite_to_decrease = (double)ship->missing_halite() / (double)area * (double)game.get_constant("Score: Remove Halite Multiplier");
 
 	for (int i = 0; i <= radius * 2; ++i)
 		for (int j = 0; j <= radius * 2; ++j)

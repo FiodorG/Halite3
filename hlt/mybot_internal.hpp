@@ -37,8 +37,6 @@ namespace hlt
 					for (auto& ship : game.objective_manager.ships_ordered)
 					{
 						pair<Position, double> action = game.move_solver.find_best_action(ship, game);
-
-						//ship->set_objective_position(action.first);
 						game.assign_ship_to_target_position(ship, action.first);
 					}
 				}

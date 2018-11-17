@@ -26,6 +26,7 @@ namespace hlt
 		vector<vector<Direction>> all_path_permutations_3;
 		vector<vector<Direction>> all_path_permutations_4;
 		vector<vector<Direction>> all_path_permutations_5;
+		vector<vector<Direction>> all_path_permutations_6;
 
 		MoveSolver() 
 		{
@@ -33,6 +34,7 @@ namespace hlt
 			all_path_permutations_3 = get_all_permutations(3);
 			all_path_permutations_4 = get_all_permutations(4);
 			all_path_permutations_5 = get_all_permutations(5);
+			all_path_permutations_6 = get_all_permutations(6);
 		}
 
 		const vector<vector<Direction>>* get_path_permutations(int reach) const
@@ -47,6 +49,8 @@ namespace hlt
 				return &all_path_permutations_4;
 			case 5:
 				return &all_path_permutations_5;
+			case 6:
+				return &all_path_permutations_6;
 			default:
 				log::log(string("Error: invalid path permuataion."));
 				exit(1);
@@ -64,6 +68,8 @@ namespace hlt
 				return all_path_permutations_4[best_score_index][best_score_move];
 			case 5:
 				return all_path_permutations_5[best_score_index][best_score_move];
+			case 6:
+				return all_path_permutations_6[best_score_index][best_score_move];
 			default:
 				log::log(string("Error: invalid path permuataion."));
 				exit(1);
@@ -71,13 +77,12 @@ namespace hlt
 		}
 
 		pair<Position, double> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
-		//pair<Position, int> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
 
-		double score_path2(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
-		pair<Position, double> find_best_extract_move2(shared_ptr<Ship> ship, const Game& game, int reach) const;
+		double score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, int distance_margin, const Game& game) const;
+		pair<Position, double> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const;
 
 		bool valid_move(const Position& position, const Game& game) const;
-		//tuple<int, int> score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, const Game& game) const;
+		bool no_priority_ships(const Position& position, const Game& game) const;
 		vector<vector<Direction>> get_all_permutations(int move_number) const;
 	};
 }

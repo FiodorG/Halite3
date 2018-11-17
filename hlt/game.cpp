@@ -104,10 +104,10 @@ void hlt::Game::update_frame()
 
 	// Scorer
 	scorer.update_grid_score_move(*this);
+	scorer.update_grid_score_inspiration(*this);
 	scorer.update_grid_score_extract(*this);
 	scorer.update_grid_score_dropoff(*this);
 	scorer.update_grid_score_highway(*this);
-	scorer.update_grid_score_inspiration(*this);
 
 	// Scorer
 	scorer.halite_total = 0;

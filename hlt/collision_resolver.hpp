@@ -30,6 +30,7 @@ namespace hlt
 		void edit_collisions(unordered_map<shared_ptr<Ship>, Position> collisions, Game& game);
 		void fill_positions_enemies(Game& game);
 		void exchange_ships(Game& game);
+		void exchange_ships_on_base(Game& game);
 		vector<Command> resolve_moves(Game& game);
 	};
 }
