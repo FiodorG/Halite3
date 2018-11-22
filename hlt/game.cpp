@@ -43,6 +43,9 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 	scorer.grid_score_dropoff = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract_smooth = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_inspiration = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
+
+	distance_manager.closest_shipyard_or_dropoff = vector<vector<Position>>(game_map->height, vector<Position>(game_map->width, Position()));
+	distance_manager.distance_cell_shipyard_or_dropoff = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 }
 
 void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
@@ -127,7 +130,7 @@ void hlt::Game::update_frame()
 	scorer.halite_percentile = halite_all[(int)(0.8 * game_map->width * game_map->height)];
 
 	// Distance manager
-	//distance_manager.fill_distances(*this);
+	distance_manager.fill_closest_shipyard_or_dropoff(*this);
 }
 
 bool hlt::Game::end_turn(const std::vector<hlt::Command>& commands) 

@@ -282,6 +282,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 	else
 	{
 		int reach = (game.me->ships.size() <= 30) ? 6 : 5;
+		
 		best_move = find_best_extract_move(ship, game, reach, 0);
 	}
 	

@@ -9,15 +9,26 @@
 using namespace hlt;
 using namespace std;
 
-//void DistanceManager::fill_distances(const Game& game)
-//{
-//	ship_distances.clear();
-//	for (const auto& ship : game.me->ships)
-//		ship_distances[ship.second] = game.pathfinder.dijkstra_costs(game.mapcell(ship.second), game);
-//
-//	shipyard_or_dropoff_distances.clear();
-//	for (const auto& dropoff : game.me->dropoffs)
-//		shipyard_or_dropoff_distances[dropoff.second->position] = game.pathfinder.dijkstra_costs(game.mapcell(dropoff.second->position), game);
-//
-//	shipyard_or_dropoff_distances[game.me->shipyard->position] = game.pathfinder.dijkstra_costs(game.mapcell(game.me->shipyard->position), game);
-//}
+void DistanceManager::fill_closest_shipyard_or_dropoff(const Game& game)
+{
+	for (int i = 0; i < game.game_map->height; ++i)
+		for (int j = 0; j < game.game_map->width; ++j)
+		{
+			Position position = Position(j, i);
+			Position shipyard_or_dropoff = game.get_closest_shipyard_or_dropoff(position);
+
+			closest_shipyard_or_dropoff[i][j] = shipyard_or_dropoff;
+			distance_cell_shipyard_or_dropoff[i][j] = game.distance(shipyard_or_dropoff, position);
+		}
+
+	//for (unsigned int i = 0; i < closest_shipyard_or_dropoff.size(); ++i)
+	//{
+	//	string padding = (i <= 9) ? "0" : "";
+	//	string line = "" + padding + to_string(i) + " | ";
+	//	for (unsigned int j = 0; j < closest_shipyard_or_dropoff.size(); ++j)
+	//		line += closest_shipyard_or_dropoff[i][j].to_string_position() + " ";
+	//	line += " | " + padding + to_string(i);
+
+	//	hlt::log::log(line);
+	//}
+}
