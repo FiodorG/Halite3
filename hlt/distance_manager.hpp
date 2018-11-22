@@ -14,11 +14,17 @@ namespace hlt
 	class DistanceManager
 	{
 		public:
-		unordered_map<shared_ptr<Ship>, vector<vector<int>>> ship_distances;
-		unordered_map<Position, vector<vector<int>>> shipyard_or_dropoff_distances;
+		vector<vector<Position>> closest_shipyard_or_dropoff;
+		vector<vector<int>> distance_cell_shipyard_or_dropoff;
 
 		DistanceManager() {}
 
-		//void fill_distances(const Game& game);
+		void fill_closest_shipyard_or_dropoff(const Game& game);
+
+		Position get_closest_shipyard_or_dropoff(const Position& position) const { return closest_shipyard_or_dropoff[position.y][position.x]; }
+		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_closest_shipyard_or_dropoff(ship->position); }
+
+		int get_distance_cell_shipyard_or_dropoff(const Position& position) const { return distance_cell_shipyard_or_dropoff[position.y][position.x]; }
+		int get_distance_cell_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_distance_cell_shipyard_or_dropoff(ship->position); }
 	};
 }

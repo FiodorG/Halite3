@@ -211,7 +211,31 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
+	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
+
+	//double max_score = -DBL_MAX;
+	//int max_i = 0, max_j = 0;
+
+	//for (int i = 0; i < height; ++i)
+	//	for (int j = 0; j < width; ++j)
+	//	{
+	//		double halite = grid_score_extract_smooth[i][j];
+	//		double distance_cell_ship = (double)game.distance(ship->position, Position(j, i));
+	//		double distance_cell_shipyard = (double)game.distance(game.get_closest_shipyard_or_dropoff(Position(j, i)), Position(j, i));
+
+	//		total_score[i][j] = halite / (double)(1 + distance_cell_ship + distance_cell_shipyard);
+
+	//		// Cannot go to objectives further than turns remaining
+	//		if ((int)(1.5 * (distance_cell_ship + distance_cell_shipyard)) >= game.turns_remaining())
+	//			total_score[i][j] = -DBL_MAX;
+
+	//		if (total_score[i][j] > max_score)
+	//		{
+	//			max_score = total_score[i][j];
+	//			max_i = i;
+	//			max_j = j;
+	//		}
+	//	}
 
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
@@ -220,33 +244,35 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 		for (int j = 0; j < width; ++j)
 		{
 			double halite = grid_score_extract_smooth[i][j];
-			double distance_cell_ship = (double)game.distance(ship->position, Position(j, i));
-			double distance_cell_shipyard = (double)game.distance(game.get_closest_shipyard_or_dropoff(Position(j, i)), Position(j, i));
+			Position position = Position(j, i);
+			int distance_cell_ship = game.distance(ship->position, position);
+			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
-			total_score[i][j] = halite / (double)pow(1 + distance_cell_ship + distance_cell_shipyard, 1);
+			int total_distance = distance_cell_ship + distance_cell_shipyard;
+			double total_score = halite / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
-			if ((int)(1.5 * (distance_cell_ship + distance_cell_shipyard)) >= game.turns_remaining())
-				total_score[i][j] = -DBL_MAX;
+			if ((int)(1.5 * total_distance) >= game.turns_remaining())
+				total_score = -DBL_MAX;
 
-			if (total_score[i][j] > max_score)
+			if (total_score > max_score)
 			{
-				max_score = total_score[i][j];
+				max_score = total_score;
 				max_i = i;
 				max_j = j;
 			}
 		}
 
-	if (verbose)
-	{
-		log::log(ship->to_string_ship());
+	//if (verbose)
+	//{
+	//	log::log(ship->to_string_ship());
 
-		log::log("Grid Score Extract");
-		log::log_vectorvector(grid_score_extract_smooth);
+	//	log::log("Grid Score Extract");
+	//	log::log_vectorvector(grid_score_extract_smooth);
 
-		log::log("Total Score");
-		log::log_vectorvector(total_score);
-	}
+	//	log::log("Total Score");
+	//	log::log_vectorvector(total_score);
+	//}
 
 	return make_pair(game.mapcell(max_i, max_j), max_score);
 }

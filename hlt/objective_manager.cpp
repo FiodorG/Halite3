@@ -147,11 +147,11 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 		if (
 			ship->is_objective(Objective_Type::SUICIDE_ON_BASE) || 
-			(2 * game.game_map->calculate_distance(ship->position, game.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()) ||
+			(2 * game.distance(ship->position, game.distance_manager.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()) ||
 			(game.turns_remaining() <= 6)
 		)
 		{
-			game.assign_objective(ship, Objective_Type::SUICIDE_ON_BASE, game.get_closest_shipyard_or_dropoff(ship));
+			game.assign_objective(ship, Objective_Type::SUICIDE_ON_BASE, game.distance_manager.get_closest_shipyard_or_dropoff(ship));
 			ship->set_assigned();
 		}
 	}
