@@ -31,6 +31,9 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_coll
 
 	for (auto& ship_move : game.positions_next_turn)
 	{
+		if (ship_move.first->is_objective(Objective_Type::ATTACK))
+			continue;
+
 		for (auto& enemy_ship_move : positions_enemies)
 			if (
 				(ship_move.second == enemy_ship_move.second) &&

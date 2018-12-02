@@ -70,16 +70,22 @@ namespace hlt
 
 			if (ship_can_move(ship))
 			{
+				Position target_position;
+
 				// Enough halite to move
-				//log::log("Assigning: " + ship->to_string_ship());
-				Position target_position = pathfinder.compute_shortest_path(ship->position, position, *this);
+				if (ship->is_objective(Objective_Type::ATTACK))
+				{
+					Direction direction = game_map->get_move(ship->position, ship->target_position());
+					target_position = game_map->directional_offset(ship->position, direction);
+				}
+				else
+					target_position = pathfinder.compute_shortest_path(ship->position, position, *this);
+
 				update_ship_target_position(ship, target_position);
 			}
 			else
 			{
 				// Not enough halite to move
-				//log::log("Staying still: " + ship->to_string_ship());
-
 				update_ship_target_position(ship, ship->position);
 			}
 		}
@@ -110,28 +116,8 @@ namespace hlt
 
 			if (players.size() == 2)
 			{
-				// get some stats for 2p games
-				switch (game_map->width)
-				{
-				case 32:
-					max_allowed_ships = get_constant("Max Ships 2p: 32");
-					break;
-				case 40:
-					max_allowed_ships = get_constant("Max Ships 2p: 40");
-					break;
-				case 48:
-					max_allowed_ships = get_constant("Max Ships 2p: 48");
-					break;
-				case 56:
-					max_allowed_ships = get_constant("Max Ships 2p: 56");
-					break;
-				case 64:
-					max_allowed_ships = get_constant("Max Ships 2p: 64");
-					break;
-				default:
-					log::log("Unknown map width");
-					exit(1);
-				}
+				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+
 			}
 			else if (players.size() == 4)
 			{
@@ -173,6 +159,7 @@ namespace hlt
 		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		int my_ships_number() const { return me->ships.size(); }
 		int my_dropoff_number() const { return me->dropoffs.size(); }
+		bool is_two_player_game() const { return players.size() == 2; }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		vector<Position> my_shipyard_or_dropoff_positions() const

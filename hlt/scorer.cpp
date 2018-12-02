@@ -108,6 +108,8 @@ void hlt::Scorer::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Posi
 {
 	if (ship->is_objective(Objective_Type::BACK_TO_BASE))
 		grid_score_move[position.y][position.x] = 2;
+	else if (ship->is_objective(Objective_Type::ATTACK))
+		grid_score_move[position.y][position.x] = 2;
 	else if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
 		grid_score_move[position.y][position.x] = 2;
 	else if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
@@ -206,43 +208,75 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	//log::log_vectorvector(grid_score_extract_smooth);
 }
 
-pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
+void hlt::Scorer::update_grid_score_targets(const Game& game)
+{
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+	int radius = game.get_constant("Score: Attack radius");
+
+	for (int i = 0; i < game.game_map->height; ++i)
+		for (int j = 0; j < game.game_map->width; ++j)
+		{
+			// Initialize to bad score
+			grid_score_attack_allies_nearby[i][j] = 0.0;
+			grid_score_attack_enemies_nearby[i][j] = 0.0;
+			Position enemy_position = Position(j, i);
+
+			if (!game.enemy_in_cell(enemy_position))
+				continue;
+
+			double number_of_allies = 0.0, number_of_enemies = 0.0;
+			double total_distance_allies = 0.0, total_distance_enemies = 0.0;
+
+			// Enemies and allies around
+			for (int k = 0; k <= radius * 2; ++k)
+				for (int l = 0; l <= radius * 2; ++l)
+				{
+					int new_k = (((i - radius + k) % width) + width) % width;
+					int new_l = (((j - radius + l) % height) + height) % height;
+
+					Position current_position = Position(new_l, new_k);
+					int distance = game.distance(enemy_position, current_position);
+
+					if (game.enemy_in_cell(current_position))
+					{
+						number_of_enemies += (1000.0 - (double)game.mapcell(current_position)->ship->halite) / max(1.0, (double)distance) / 1000.0;
+						total_distance_enemies += 1.0 / max(1.0, (double)distance);
+					}
+
+					if (game.ally_in_cell(current_position))
+					{
+						number_of_allies += (1000.0 - (double)game.mapcell(current_position)->ship->halite) / max(1.0, (double)distance) / 1000.0;
+						total_distance_allies += 1.0 / max(1.0, (double)distance);
+					}
+				}
+
+			//if (total_distance_allies > 0)
+				grid_score_attack_allies_nearby[i][j] = number_of_allies; // / total_distance_allies;
+			//if (total_distance_enemies > 0)
+				grid_score_attack_enemies_nearby[i][j] = number_of_enemies; // / total_distance_enemies;
+		}
+
+	log::log_vectorvector(grid_score_attack_allies_nearby);
+	log::log_vectorvector(grid_score_attack_enemies_nearby);
+}
+
+Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
 	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
 
-	//double max_score = -DBL_MAX;
-	//int max_i = 0, max_j = 0;
-
-	//for (int i = 0; i < height; ++i)
-	//	for (int j = 0; j < width; ++j)
-	//	{
-	//		double halite = grid_score_extract_smooth[i][j];
-	//		double distance_cell_ship = (double)game.distance(ship->position, Position(j, i));
-	//		double distance_cell_shipyard = (double)game.distance(game.get_closest_shipyard_or_dropoff(Position(j, i)), Position(j, i));
-
-	//		total_score[i][j] = halite / (double)(1 + distance_cell_ship + distance_cell_shipyard);
-
-	//		// Cannot go to objectives further than turns remaining
-	//		if ((int)(1.5 * (distance_cell_ship + distance_cell_shipyard)) >= game.turns_remaining())
-	//			total_score[i][j] = -DBL_MAX;
-
-	//		if (total_score[i][j] > max_score)
-	//		{
-	//			max_score = total_score[i][j];
-	//			max_i = i;
-	//			max_j = j;
-	//		}
-	//	}
-
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
+	bool is_two_player_game = game.is_two_player_game();
+	Objective_Type max_type;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 		{
+			Objective_Type type = Objective_Type::EXTRACT_ZONE;
 			double halite = grid_score_extract_smooth[i][j];
 			Position position = Position(j, i);
 			int distance_cell_ship = game.distance(ship->position, position);
@@ -255,11 +289,34 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 			if ((int)(1.5 * total_distance) >= game.turns_remaining())
 				total_score = -DBL_MAX;
 
+			//if (
+			//	game.get_constant("Test") &&
+			//	is_two_player_game && // 2p game
+			//	(grid_score_attack_allies_nearby[i][j] > 0.0) // I have more empty halite around
+			//	//(ship->halite <= game.mapcell(position)->ship->halite) // My ship has less halite than enemy
+			//	)
+			//{
+			//	double halite_ally = (double)ship->halite;
+			//	double halite_enemy = (double)game.mapcell(position)->ship->halite;
+			//	double halite_total = halite_ally + halite_enemy;
+			//	double score_attack_allies_nearby = max(grid_score_attack_allies_nearby[i][j] - (1000.0 - (double)halite_ally) / 1000.0, 0.0);
+			//	double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby[i][j] - (1000.0 - (double)halite_enemy) / 1000.0, 0.0);
+			//	double proba_of_me_getting_back = score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby);
+
+			//	if (halite_ally - halite_enemy < halite_total * (2.0 * proba_of_me_getting_back - 1.0))
+			//	{
+			//		// here be a function of halite differentiel so high halite ships don't collide
+			//		total_score = 10000.0 / (1.0 + (double)total_distance);
+			//		type = Objective_Type::ATTACK;
+			//	}
+			//}
+
 			if (total_score > max_score)
 			{
 				max_score = total_score;
 				max_i = i;
 				max_j = j;
+				max_type = type;
 			}
 		}
 
@@ -274,7 +331,7 @@ pair<MapCell*,double> hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> shi
 	//	log::log_vectorvector(total_score);
 	//}
 
-	return make_pair(game.mapcell(max_i, max_j), max_score);
+	return Objective(-1, max_type, game.mapcell(max_i, max_j)->position, max_score);
 }
 
 pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> shipyard, vector<Position> dropoffs, const Game& game) const
@@ -315,13 +372,13 @@ pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> 
 	return make_pair(game.mapcell(max_i, max_j), grid_score_dropoff[max_i][max_j]);
 }
 
-void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell* target_cell, int radius, const Game& game)
+void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, int radius, const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	int target_x = target_cell->position.x;
-	int target_y = target_cell->position.y;
+	int target_x = position.x;
+	int target_y = position.y;
 
 	int area = 2 * radius * radius + 2 * radius + 1;
 	double halite_to_decrease = (double)ship->missing_halite() / (double)area * (double)game.get_constant("Score: Remove Halite Multiplier");
@@ -333,7 +390,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 			int new_y = (((target_y - radius + j) % height) + height) % height;
 
 			// When ship assigned to an area, remove missing cargo from the zone's score in radius around.
-			if (game.distance(target_cell->position, Position(new_x, new_y)) <= radius)
+			if (game.distance(position, Position(new_x, new_y)) <= radius)
 				grid_score_extract_smooth[new_y][new_x] -= halite_to_decrease;
 
 			grid_score_extract_smooth[new_y][new_x] = max(0.0, grid_score_extract_smooth[new_y][new_x]);
@@ -343,8 +400,8 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell*
 	//log::log_vectorvector(grid_score_extract);
 }
 
-void hlt::Scorer::decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, double mult, const Game& game)
+void hlt::Scorer::decreases_score_in_target_cell(shared_ptr<Ship> ship, const Position& position, double mult, const Game& game)
 {
-	grid_score_extract_smooth[target_cell->position.y][target_cell->position.x] *= mult;
+	grid_score_extract_smooth[position.y][position.x] *= mult;
 }
 

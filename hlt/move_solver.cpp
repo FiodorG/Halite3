@@ -245,8 +245,6 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 {
 	pair<Position, double> best_move;
 
-	// check here that ship can move...
-
 	if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
 	{
 		// If not enough halite, extract around base target position
@@ -279,7 +277,12 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 			log::log(ship->to_string_ship() + " back to base on " + best_move.first.to_string_position());
 		}		
 	}
-	else
+	else if (ship->is_objective(Objective_Type::ATTACK))
+	{
+		best_move = make_pair(ship->target_position(), ship->objective->score);
+		log::log(ship->to_string_ship() + " attacking on " + best_move.first.to_string_position());
+	}
+	else // Objective_Type::EXTRACT_ZONE
 	{
 		int reach = (game.me->ships.size() <= 30) ? 6 : 5;
 		

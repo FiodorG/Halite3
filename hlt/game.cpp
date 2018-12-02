@@ -43,6 +43,8 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 	scorer.grid_score_dropoff = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_extract_smooth = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_inspiration = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
+	scorer.grid_score_attack_allies_nearby = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
+	scorer.grid_score_attack_enemies_nearby = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 
 	distance_manager.closest_shipyard_or_dropoff = vector<vector<Position>>(game_map->height, vector<Position>(game_map->width, Position()));
 	distance_manager.distance_cell_shipyard_or_dropoff = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
@@ -111,6 +113,7 @@ void hlt::Game::update_frame()
 	scorer.update_grid_score_extract(*this);
 	scorer.update_grid_score_dropoff(*this);
 	scorer.update_grid_score_highway(*this);
+	scorer.update_grid_score_targets(*this);
 
 	// Scorer
 	scorer.halite_total = 0;
@@ -149,7 +152,7 @@ void hlt::Game::fudge_ship_if_base_blocked()
 	{
 		int all_distance_from_shipyard = 0;
 		for (auto& ship_iterator : me->ships)
-			if (game_map->calculate_distance(ship_iterator.second->position, my_shipyard_position()) == 1)
+			if (distance(ship_iterator.second->position, my_shipyard_position()) == 1)
 				all_distance_from_shipyard += 1;
 
 		if (
