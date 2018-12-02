@@ -44,10 +44,16 @@ void PathFinder::log_costs(unordered_map<MapCell*, int> cost_so_far, const Game&
 	log::log("");
 }
 
+Position PathFinder::compute_direct_path(const Position& source_position, const Position& target_position, Game& game)
+{
+	Direction direction = game.game_map->get_move(source_position, target_position);
+	return game.game_map->directional_offset(source_position, direction);
+}
+
 Position PathFinder::compute_shortest_path(const Position& source_position, const Position& target_position, Game& game)
 {
-	if (source_position == target_position)
-		return source_position;
+	if ((source_position == target_position) || (game.distance(source_position, target_position) == 1))
+		return target_position;
 
 	MapCell* source_cell = game.game_map->at(source_position);
 	MapCell* target_cell = game.game_map->at(target_position);
