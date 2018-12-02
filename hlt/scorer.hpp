@@ -22,6 +22,8 @@ namespace hlt
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
 		vector<vector<int>> grid_score_inspiration;
+		vector<vector<double>> grid_score_attack_allies_nearby;
+		vector<vector<double>> grid_score_attack_enemies_nearby;
 		int halite_initial;
 		int halite_total;
 		int halite_percentile;
@@ -47,11 +49,16 @@ namespace hlt
 		static double linear_decrease(int x, int x_min, int x_max, double y_min, double y_max);
 		double butterfly(double x, double x_min, double x_mid, double x_max, double y_min, double y_mid, double y_max) const;
 
-		pair<MapCell*, double> find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
-		void decreases_score_in_target_area(shared_ptr<Ship> ship, MapCell* target_cell, int radius, const Game& game);
-		void decreases_score_in_target_cell(shared_ptr<Ship> ship, MapCell* target_cell, double mult, const Game& game);
+		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
+		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, int radius, const Game& game);
+		void decreases_score_in_target_cell(shared_ptr<Ship> ship, const Position& position, double mult, const Game& game);
 
 		// Shipyard construction
 		pair<MapCell*, double> find_best_dropoff_cell(shared_ptr<Shipyard> shipyard, vector<Position> dropoffs, const Game& game) const;
+
+		// Attack
+		void update_grid_score_targets(const Game& game);
+		double get_grid_score_allies_nearby(const Position& position) const { return grid_score_attack_allies_nearby[position.y][position.x]; }
+		double get_grid_score_attack_enemies_nearby(const Position& position) const { return grid_score_attack_enemies_nearby[position.y][position.x]; }
 	};
 }

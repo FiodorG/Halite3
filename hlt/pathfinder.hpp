@@ -27,6 +27,9 @@ namespace hlt
 		PathFinder() : width(0) {}
 		PathFinder(int width) : width(width) {}
 
+		// Simple navigation
+		Position compute_direct_path(const Position& source_position, const Position& target_position, Game& game);
+
 		// Dijkstra
 		Position compute_shortest_path(const Position& source_position, const Position& target_position, Game& game);
 		static vector<MapCell*> reconstruct_path(MapCell* source_cell, MapCell* target_cell, unordered_map<MapCell*, MapCell*> came_from);
