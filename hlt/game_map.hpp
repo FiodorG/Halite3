@@ -80,6 +80,20 @@ namespace hlt
 			return toroidal_dx + toroidal_dy;
 		}
 
+		int calculate_distance_inf(const Position& source, const Position& target) const
+		{
+			const auto& normalized_source = normalize(source);
+			const auto& normalized_target = normalize(target);
+
+			const int dx = abs(normalized_source.x - normalized_target.x);
+			const int dy = abs(normalized_source.y - normalized_target.y);
+
+			const int toroidal_dx = min(dx, width - dx);
+			const int toroidal_dy = min(dy, height - dy);
+
+			return max(toroidal_dx, toroidal_dy);
+		}
+
 		int calculate_distance_from_axis(const Position& source, const Position& target) const
 		{
 			const auto& normalized_source = normalize(source);

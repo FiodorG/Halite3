@@ -31,6 +31,9 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_coll
 
 	for (auto& ship_move : game.positions_next_turn)
 	{
+		if (ship_move.first->is_objective(Objective_Type::ATTACK) || ship_move.first->is_objective(Objective_Type::BLOCK_ENEMY_BASE))
+			continue;
+
 		for (auto& enemy_ship_move : positions_enemies)
 			if (
 				(ship_move.second == enemy_ship_move.second) &&
@@ -237,12 +240,17 @@ void CollisionResolver::exchange_ships(Game& game)
 
 void CollisionResolver::exchange_ships_on_base(Game& game)
 {
+	// In the last turns during suicide not good idea to do this
+	if (game.turns_remaining() <= 25)
+		return;
+
 	list<tuple<shared_ptr<Ship>, shared_ptr<Ship>>> ships_to_switch;
 
 	for (auto& ship_position1 : game.positions_next_turn)
 	{
 		shared_ptr<Ship> ship1 = ship_position1.first;
 		Position position1 = ship_position1.second;
+
 
 		// Select only ships on shipyard which aren't going to move
 		if ((position1 != ship1->position) || !game.is_shipyard_or_dropoff(ship1->position))

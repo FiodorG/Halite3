@@ -27,11 +27,21 @@ namespace hlt
 		PathFinder() : width(0) {}
 		PathFinder(int width) : width(width) {}
 
+		Position compute_path(shared_ptr<Ship> ship, const Position& target_position, Game& game);
+
+		// Simple navigation
+		Position compute_direct_path(const Position& source_position, const Position& target_position, Game& game);
+		Position compute_direct_path_no_base(const Position& source_position, const Position& target_position, Game& game);
+
+		// Dijkstra block
+		vector<MapCell*> dijkstra_block (MapCell* source_cell, MapCell* target_cell, MapCell* enemy_base, const Game& game) const;
+		int compute_next_step_score_block(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, MapCell* enemy_base, const Game& game) const;
+
 		// Dijkstra
 		Position compute_shortest_path(const Position& source_position, const Position& target_position, Game& game);
 		static vector<MapCell*> reconstruct_path(MapCell* source_cell, MapCell* target_cell, unordered_map<MapCell*, MapCell*> came_from);
 		static vector<MapCell*> adjacent_cells_filtered(MapCell* source_cell, MapCell* target_cell, MapCell* cell, const Game& game);
-		static vector<MapCell*> adjacent_cells_all(MapCell* source_cell, MapCell* cell, const Game& game);
+		static vector<MapCell*> adjacent_cells_all(MapCell* cell, const Game& game);
 		inline int heuristic(MapCell* cell, MapCell* target_cell, const Game& game) const;
 		int compute_next_step_score(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const;
 		vector<MapCell*> dijkstra_path(MapCell* source_cell, MapCell* target_cell, const Game& game) const;

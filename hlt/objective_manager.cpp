@@ -23,7 +23,7 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = (game.players.size() == 2) ? 3 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 4 : 4;
+		max_dropoffs = (game.players.size() == 2) ? 5 : 4;
 		break;
 	default:
 		log::log("Unknown map width");
@@ -40,8 +40,10 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		base_dropoffs = 2;
 	else if (game.scorer.halite_initial <= 700000) // 3 on (500000,700000]
 		base_dropoffs = 3;
-	else // 4 above 700000
+	else if (game.scorer.halite_initial <= 1000000) // 4 on (700000,1000000]
 		base_dropoffs = 4;
+	else // 5 above 1000000
+		base_dropoffs = 5;
 
 	base_dropoffs = min(base_dropoffs, max_dropoffs);
 
@@ -81,6 +83,10 @@ bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> 
 		return (game.my_ships_number() >= 40);
 	else if (game.my_dropoff_number() == 2)
 		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 40);
+	else if (game.my_dropoff_number() == 3)
+		return (game.my_ships_number() >= 60) && (turn_since_last_dropoff >= 40);
+	else if (game.my_dropoff_number() == 4)
+		return (game.my_ships_number() >= 80) && (turn_since_last_dropoff >= 40);
 
 	return false;
 }
@@ -137,6 +143,55 @@ void ObjectiveManager::assign_objectives(Game& game)
 	}
 
 	/*
+	Update BLOCK_ENEMY_BASE
+	**********************
+	*/
+	{
+		Stopwatch s("Greedy allocation Block");
+		unordered_map<shared_ptr<Ship>, double> ships_to_block;
+		for (const shared_ptr<Ship>& ship : game.me->my_ships)
+			if (
+				!ship->assigned && 
+				game.get_constant("Block Enemy Base at End") &&
+				(
+					// if previously assigned to blockade
+					ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE) || 
+					// capture ships to blockade
+					((ship->halite < 40) && (2 * game.distance(ship->position, game.get_closest_enemy_shipyard_or_dropoff(ship)) >= game.turns_remaining())) ||
+					// convert ships to blockade from suicide if low halite
+					(ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && (ship->halite < 40))
+				)
+			)
+				ships_to_block[ship] = 0.0;
+
+		while (ships_to_block.size())
+		{
+			shared_ptr<Ship> best_ship;
+			Objective best_objective = Objective();
+			double best_score = -DBL_MAX;
+
+			for (const auto& ship : ships_to_block)
+			{
+				Objective objective = game.blocker.find_best_objective_cell(ship.first, game);
+
+				if (objective.score > best_score)
+				{
+					best_ship = ship.first;
+					best_score = objective.score;
+					best_objective = objective;
+				}
+			}
+
+			log::log(best_ship->to_string_ship() + " blocking area " + best_objective.target_position.to_string_position() + " with score " + to_string(best_score));
+
+			game.blocker.decrease_score_in_position(best_objective.target_position, game);
+			best_ship->assign_objective(best_objective);
+			best_ship->set_assigned();
+			ships_to_block.erase(best_ship);
+		}
+	}
+
+	/*
 	Update SUICIDE_ON_BASE
 	**********************
 	*/
@@ -181,7 +236,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 	In globally greedy assignment
 	*/
 	{
-		Stopwatch s("Extract zones");
+		Stopwatch s("Greedy allocation");
 		unordered_map<shared_ptr<Ship>, double> ships_without_objectives;
 		for (const shared_ptr<Ship>& ship : game.me->my_ships)
 			if (!ship->assigned)
@@ -190,26 +245,42 @@ void ObjectiveManager::assign_objectives(Game& game)
 		while (ships_without_objectives.size())
 		{
 			shared_ptr<Ship> best_ship;
-			MapCell* best_cell = &game.game_map->cells[0][0];
+			Objective best_objective = Objective();
 			double best_score = -DBL_MAX;
 
 			for (const auto& ship : ships_without_objectives)
 			{
-				pair<MapCell*, double> action = game.scorer.find_best_objective_cell(ship.first, game);
+				Objective objective = game.scorer.find_best_objective_cell(ship.first, game);
 
-				if (action.second > best_score)
+				if (objective.score > best_score)
 				{
 					best_ship = ship.first;
-					best_score = action.second;
-					best_cell = action.first;
+					best_score = objective.score;
+					best_objective = objective;
 				}
 			}
 
-			log::log(best_ship->to_string_ship() + " assigned to area " + best_cell->position.to_string_position() + " with score " + to_string(best_score));
+			if (best_objective.type == Objective_Type::ATTACK)
+			{
+				log::log(best_ship->to_string_ship() + " attacking enemy on " + best_objective.target_position.to_string_position() + " with score " + to_string(best_score));
 
-			game.scorer.decreases_score_in_target_cell(best_ship, best_cell, 0.0, game);
-			game.scorer.decreases_score_in_target_area(best_ship, best_cell, game.get_constant("Score: Brute force reach"), game);
-			game.assign_objective(best_ship, Objective_Type::EXTRACT_ZONE, best_cell->position, best_score);
+				game.scorer.grid_score_attack_allies_nearby[best_objective.target_position.y][best_objective.target_position.x] *= 0.0;
+				best_ship->assign_objective(best_objective);
+			}
+			else if (best_objective.type == Objective_Type::EXTRACT_ZONE)
+			{
+				log::log(best_ship->to_string_ship() + " assigned to area " + best_objective.target_position.to_string_position() + " with score " + to_string(best_score));
+
+				game.scorer.decreases_score_in_target_cell(best_ship, best_objective.target_position, 0.0, game);
+				game.scorer.decreases_score_in_target_area(best_ship, best_objective.target_position, game.get_constant("Score: Brute force reach"), game);
+				game.assign_objective(best_ship, Objective_Type::EXTRACT_ZONE, best_objective.target_position, best_score);
+			}
+			else
+			{
+				log::log("Unknown objective in greedy method");
+				exit(1);
+			}
+
 			ships_without_objectives.erase(best_ship);
 		}
 	}
@@ -224,6 +295,14 @@ void ObjectiveManager::get_ordered_ships(Game& game)
 
 	while (!ships_dropoff.empty())
 		ships_ordered.push_back(ships_dropoff.get());
+
+	PriorityQueue<shared_ptr<Ship>, double> ships_block;
+	for (const shared_ptr<Ship>& ship : game.me->my_ships)
+		if (ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE))
+			ships_block.put(ship, ship->objective->score);
+
+	while (!ships_block.empty())
+		ships_ordered.push_back(ships_block.get());
 
 	PriorityQueue<shared_ptr<Ship>, double> ships_suicide;
 	for (const shared_ptr<Ship>& ship : game.me->my_ships)
@@ -240,6 +319,14 @@ void ObjectiveManager::get_ordered_ships(Game& game)
 
 	while (!ships_back_to_base.empty())
 		ships_ordered.push_back(ships_back_to_base.get());
+
+	PriorityQueue<shared_ptr<Ship>, double> ships_attack;
+	for (const shared_ptr<Ship>& ship : game.me->my_ships)
+		if (ship->is_objective(Objective_Type::ATTACK))
+			ships_attack.put(ship, -ship->objective->score);
+
+	while (!ships_attack.empty())
+		ships_ordered.push_back(ships_attack.get());
 
 	PriorityQueue<shared_ptr<Ship>, double> ships_extract;
 	for (const shared_ptr<Ship>& ship : game.me->my_ships)
