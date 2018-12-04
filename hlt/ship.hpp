@@ -31,6 +31,10 @@ namespace hlt
 			if (static_cast<bool>(ship->objective))
 				this->objective = ship->objective;
 		}
+		void assign_objective(Objective objective)
+		{
+			this->objective = make_shared<Objective>(objective);
+		}
 		Objective_Type objective_type() const { return objective->type; }
 		void set_objective_position(const Position& position) { this->objective->target_position = position; }
 

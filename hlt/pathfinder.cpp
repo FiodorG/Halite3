@@ -44,10 +44,51 @@ void PathFinder::log_costs(unordered_map<MapCell*, int> cost_so_far, const Game&
 	log::log("");
 }
 
+Position PathFinder::compute_path(shared_ptr<Ship> ship, const Position& position, Game& game)
+{
+	Position target_position;
+
+	if (ship->is_objective(Objective_Type::ATTACK))
+		target_position = compute_direct_path(ship->position, position, game);
+	else if (ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE))
+		target_position = compute_direct_path_no_base(ship->position, position, game);
+	else
+		target_position = compute_shortest_path(ship->position, position, game);
+
+	return target_position;
+}
+
+Position PathFinder::compute_direct_path_no_base(const Position& source_position, const Position& target_position, Game& game)
+{
+	Position enemy_base = game.get_closest_enemy_shipyard_or_dropoff(target_position);
+
+	if ((source_position == target_position) || (game.distance(source_position, target_position) == 1))
+		return target_position;
+
+	MapCell* source_cell = game.game_map->at(source_position);
+	MapCell* target_cell = game.game_map->at(target_position);
+	MapCell* enemy_base_cell = game.game_map->at(enemy_base);
+
+	//clock_t start = clock();
+	vector<MapCell*> optimal_path = dijkstra_block(source_cell, target_cell, enemy_base_cell, game);
+	//log::log("Dijkstra for " + source_position.to_string_position() + " to " + target_position.to_string_position() + " took: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
+
+	if (optimal_path.size() > 1)
+		return optimal_path.at(1)->position;
+	else
+		return source_cell->position;
+}
+
+Position PathFinder::compute_direct_path(const Position& source_position, const Position& target_position, Game& game)
+{
+	Direction direction = game.game_map->get_move(source_position, target_position);
+	return game.game_map->directional_offset(source_position, direction);
+}
+
 Position PathFinder::compute_shortest_path(const Position& source_position, const Position& target_position, Game& game)
 {
-	if (source_position == target_position)
-		return source_position;
+	if ((source_position == target_position) || (game.distance(source_position, target_position) == 1))
+		return target_position;
 
 	MapCell* source_cell = game.game_map->at(source_position);
 	MapCell* target_cell = game.game_map->at(target_position);
@@ -92,7 +133,7 @@ vector<MapCell*> PathFinder::adjacent_cells_filtered(MapCell* source_cell, MapCe
 	return adjacent_cells;
 }
 
-vector<MapCell*> PathFinder::adjacent_cells_all(MapCell* source_cell, MapCell* cell, const Game& game)
+vector<MapCell*> PathFinder::adjacent_cells_all(MapCell* cell, const Game& game)
 {
 	vector<MapCell*> adjacent_cells;
 
@@ -189,90 +230,60 @@ vector<MapCell*> PathFinder::dijkstra_path(MapCell* source_cell, MapCell* target
 
 	return vector<MapCell*>(1, source_cell);
 }
-//
-//void set_cell(vector<vector<int>>& costs, MapCell* cell, int value)
-//{
-//	costs[cell->position.y][cell->position.x] = value;
-//}
-//
-//int get_cell(vector<vector<int>>& costs, MapCell* cell)
-//{
-//	return costs[cell->position.y][cell->position.x];
-//}
-//vector<vector<int>> PathFinder::dijkstra_costs(MapCell* source_cell, const Game& game) const
-//{
-//	PriorityQueue<MapCell*, int> frontier;
-//	frontier.put(source_cell, 0);
-//
-//	vector<vector<int>> costs(game.game_map->height, vector<int>(game.game_map->width, INT_MAX));
-//	set_cell(costs, source_cell, 0);
-//
-//	while (!frontier.empty())
-//	{
-//		MapCell* current_cell = frontier.get();
-//
-//		for (MapCell* next_cell : adjacent_cells_all(source_cell, current_cell, game))
-//		{
-//			int new_cost = get_cell(costs, current_cell) + compute_next_step_score(source_cell, current_cell, next_cell, game);
-//
-//			if (new_cost < get_cell(costs, next_cell))
-//			{
-//				set_cell(costs, next_cell, new_cost);
-//				frontier.put(next_cell, new_cost);
-//			}
-//		}
-//	}
-//
-//	return costs;
-//}
-//
-//vector<MapCell*> PathFinder::dijkstra_halite_per_turn(MapCell* source_cell, MapCell* target_cell, const Game& game) const
-//{
-//	unordered_map<MapCell*, MapCell*> came_from;
-//	came_from[source_cell] = source_cell;
-//
-//	PriorityQueueInverted<MapCell*, int> frontier;
-//	frontier.put(source_cell, 0);
-//
-//	unordered_map<MapCell*, int> halite_so_far;
-//	halite_so_far[source_cell] = 0;
-//
-//	unordered_map<MapCell*, int> halite_per_turn_so_far;
-//	halite_per_turn_so_far[source_cell] = 0;
-//
-//	unordered_map<MapCell*, int> turns_so_far;
-//	turns_so_far[source_cell] = 0;
-//
-//	while (!frontier.empty())
-//	{
-//		MapCell* current_cell = frontier.get();
-//
-//		if (current_cell->position == target_cell->position)
-//		{
-//			//if (game.turn_number == 10)
-//			//{
-//				log_costs(halite_per_turn_so_far, game);
-//				log_path(reconstruct_path(source_cell, target_cell, came_from), game);
-//			//}
-//
-//			return reconstruct_path(source_cell, target_cell, came_from);
-//		}
-//
-//		for (MapCell* next_cell : adjacent_cells_all(source_cell, current_cell, game))
-//		{
-//			int new_cost = halite_so_far[current_cell] + (int)ceil(0.25 * next_cell->halite);
-//			int new_turn = turns_so_far[current_cell] + 1;
-//			int new_halite_per_turn = new_cost / new_turn;
-//
-//			if (new_halite_per_turn > halite_per_turn_so_far[next_cell])
-//			{
-//				halite_so_far[next_cell] = new_cost;
-//				turns_so_far[next_cell] = new_turn;
-//				halite_per_turn_so_far[next_cell] = new_halite_per_turn;
-//				frontier.put(next_cell, new_halite_per_turn - game.get_constant("A* Heuristic") * game.game_map->calculate_distance(next_cell->position, target_cell->position));
-//			}
-//		}
-//	}
-//
-//	return vector<MapCell*>(1, source_cell);
-//}
+
+int PathFinder::compute_next_step_score_block(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, MapCell* enemy_base, const Game& game) const
+{
+	int move_score = 1;
+
+	if (next_cell->has_structure())
+		move_score = 4;
+
+	if (game.game_map->calculate_distance_inf(next_cell->position, enemy_base->position) == 1)
+		move_score = 0;
+
+	if ((game.scorer.get_grid_score_move(next_cell->position) > 0) && (game.scorer.get_grid_score_move(next_cell->position) < 9))
+		move_score = 10;
+
+	if (game.scorer.get_grid_score_move(next_cell->position) == 10)
+		move_score = 999;
+
+	return move_score;
+}
+
+vector<MapCell*> PathFinder::dijkstra_block(MapCell* source_cell, MapCell* target_cell, MapCell* enemy_base, const Game& game) const
+{
+	unordered_map<MapCell*, MapCell*> came_from;
+	came_from[source_cell] = source_cell;
+
+	PriorityQueue<MapCell*, int> frontier;
+	frontier.put(source_cell, 0);
+
+	unordered_map<MapCell*, int> cost_so_far;
+	cost_so_far[source_cell] = 0;
+
+	while (!frontier.empty())
+	{
+		// Pick the minimum distance unsettled cell
+		MapCell* current_cell = frontier.get();
+
+		// If current cell is the target, return its path
+		if (current_cell->position == target_cell->position)
+			return reconstruct_path(source_cell, target_cell, came_from);
+
+		//log::log("Current cell:" + current_cell->position.to_string_position());
+
+		for (MapCell* next_cell : adjacent_cells_all(current_cell, game))
+		{
+			int new_cost = cost_so_far[current_cell] + compute_next_step_score_block(source_cell, current_cell, next_cell, enemy_base, game);
+
+			if ((cost_so_far.find(next_cell) == cost_so_far.end()) || (new_cost < cost_so_far[next_cell]))
+			{
+				cost_so_far[next_cell] = new_cost;
+				came_from[next_cell] = current_cell;
+				frontier.put(next_cell, new_cost + heuristic(next_cell, target_cell, game));
+			}
+		}
+	}
+
+	return vector<MapCell*>(1, source_cell);
+}

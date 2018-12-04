@@ -82,6 +82,7 @@ namespace hlt
 		pair<Position, double> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const;
 
 		bool valid_move(const Position& position, const Game& game) const;
+		bool enemy_at_position(const Position& position, const Game& game) const;
 		bool no_priority_ships(const Position& position, const Game& game) const;
 		vector<vector<Direction>> get_all_permutations(int move_number) const;
 	};
