@@ -19,7 +19,8 @@ namespace hlt
 		SUICIDE_ON_BASE,
 		MAKE_DROPOFF,
 		EXTRACT_ZONE,
-		MOVE
+		MOVE,
+		ATTACK
 	};
 
 	struct Objective
@@ -59,6 +60,9 @@ namespace hlt
 				break;
 			case EXTRACT_ZONE:
 				string_type = "EXTRACT ZONE";
+				break;
+			case ATTACK:
+				string_type = "ATTACK";
 				break;
 			default:
 				break;

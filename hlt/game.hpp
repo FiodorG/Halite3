@@ -8,6 +8,7 @@
 #include "log.hpp"
 #include "scorer.hpp"
 #include "move_solver.hpp"
+#include "blocker.hpp"
 #include "distance_manager.hpp"
 #include "objective_manager.hpp"
 #include "defines.hpp"
@@ -55,6 +56,8 @@ namespace hlt
 		// Objectives
 		ObjectiveManager objective_manager;
 
+		// Blocker
+		Blocker blocker;
 
 		Game(unordered_map<string, int> constants);
 
@@ -70,16 +73,11 @@ namespace hlt
 
 			if (ship_can_move(ship))
 			{
-				// Enough halite to move
-				//log::log("Assigning: " + ship->to_string_ship());
-				Position target_position = pathfinder.compute_shortest_path(ship->position, position, *this);
+				Position target_position = pathfinder.compute_path(ship, position, *this);
 				update_ship_target_position(ship, target_position);
 			}
 			else
 			{
-				// Not enough halite to move
-				//log::log("Staying still: " + ship->to_string_ship());
-
 				update_ship_target_position(ship, ship->position);
 			}
 		}
@@ -110,32 +108,15 @@ namespace hlt
 
 			if (players.size() == 2)
 			{
-				// get some stats for 2p games
-				switch (game_map->width)
-				{
-				case 32:
-					max_allowed_ships = get_constant("Max Ships 2p: 32");
-					break;
-				case 40:
-					max_allowed_ships = get_constant("Max Ships 2p: 40");
-					break;
-				case 48:
-					max_allowed_ships = get_constant("Max Ships 2p: 48");
-					break;
-				case 56:
-					max_allowed_ships = get_constant("Max Ships 2p: 56");
-					break;
-				case 64:
-					max_allowed_ships = get_constant("Max Ships 2p: 64");
-					break;
-				default:
-					log::log("Unknown map width");
-					exit(1);
-				}
+				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+
 			}
 			else if (players.size() == 4)
 			{
 				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+
+				if (game_map->width == 32)
+					max_allowed_ships = (int)(0.8 * max_allowed_ships);
 			}	
 			else
 			{
@@ -173,6 +154,7 @@ namespace hlt
 		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		int my_ships_number() const { return me->ships.size(); }
 		int my_dropoff_number() const { return me->dropoffs.size(); }
+		bool is_two_player_game() const { return players.size() == 2; }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		vector<Position> my_shipyard_or_dropoff_positions() const
@@ -243,8 +225,9 @@ namespace hlt
 
 			return closest_shipyard;
 		}
+		Position get_closest_enemy_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_closest_enemy_shipyard_or_dropoff(ship->position); }
 		bool is_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->is_shipyard_or_dropoff(my_id); }
-		bool position_occupied_next_turn(const Position& position)
+		bool position_occupied_next_turn(const Position& position) const
 		{
 			for (auto& ship_position : positions_next_turn)
 				if (ship_position.second == position)

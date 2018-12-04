@@ -49,6 +49,7 @@ cl.exe /FeMyBot2.exe /std:c++14 /O2 /MT /EHsc /I . /Fo.\obj\ ^
  .\hlt\pathfinder.cpp ^
  .\hlt\scorer.cpp ^
  .\hlt\move_solver.cpp ^
+ .\hlt\blocker.cpp ^
  .\hlt\log.cpp ^
  .\hlt\player.cpp ^
  .\hlt\ship.cpp ^
