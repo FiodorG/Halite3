@@ -72,9 +72,6 @@ vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) cons
 
 bool MoveSolver::valid_move(const Position& position, const Game& game) const
 {
-	//if (game.is_two_player_game() && (game.scorer.get_grid_score_move(position) > 2))
-	//	return true;
-
 	return game.scorer.get_grid_score_move(position) == 0;
 }
 bool MoveSolver::enemy_at_position(const Position& position, const Game& game) const
@@ -131,23 +128,7 @@ double MoveSolver::score_path(
 		else if (cargo >= halite_to_burn)
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
-			
-			//if (
-			//	game.get_constant("Test") &&
-			//	game.is_two_player_game() &&
-			//	enemy_at_position(current_position, game)
-			//)
-			//{
-			//	double halite_enemy = (double)game.mapcell(current_position)->ship->halite;
-			//	double score_attack_allies_nearby = max(game.scorer.get_grid_score_allies_nearby(current_position) - (1000.0 - (double)cargo), 0.0);
-			//	double score_attack_enemies_nearby = max(game.scorer.get_grid_score_attack_enemies_nearby(current_position) - (1000.0 - (double)halite_enemy), 0.0);
-			//	double proba_of_me_getting_back = min(score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby), 0.95);
 
-			//	double score_ally = -cargo + (cargo + halite_enemy) * proba_of_me_getting_back;
-			//	double score_enemy = -halite_enemy + (cargo + halite_enemy) * (1.0 - proba_of_me_getting_back);
-
-			//	return score_ally - score_enemy;
-			//}
 			if (!valid_move(current_position, game) || (game.distance(ship->target_position(), current_position) > max(distance, reach) + distance_margin))
 			{
 				return -9999999.0;
@@ -159,7 +140,7 @@ double MoveSolver::score_path(
 				moves++;
 			}
 		}
-		// staying still totally will be captured anyway
+		// staying still will be captured anyway
 		else
 		{
 			return -9999999.0;
@@ -171,13 +152,7 @@ double MoveSolver::score_path(
 	if ((distance <= 2) && (final_distance <= 2))
 		d_distance = 0; // if close to objective can move freely
 
-	double score =
-		max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0)
-		//max(cargo - (double)ship->halite, 0.0) / max(sqrt((double)burned), 1.0)
-		//max(cargo - (double)ship->halite, 0.0) - (double)burned
-		//- (double)small_cell_malus / 10.0
-		-(double)d_distance * 15.0;
-		//- game.is_shipyard_or_dropoff(current_position) * 30.0;
+	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * 15.0;
 
 	if (false)
 	{
@@ -285,11 +260,12 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 		// If it's worth it to stop then stop
 		if (
 			(game.halite_on_position(ship->position) >= 100) &&
-			((int)(1.25 * (1000 - ship->halite)) >= (int)ceil(0.25 * game.halite_on_position(ship->position)))
-			// here do not stop if enemy close?
+			((int)(1.25 * (1000 - ship->halite)) >= (int)ceil(0.25 * game.halite_on_position(ship->position))) &&
+			(game.is_four_player_game() || !game.enemy_in_adjacent_cell(ship->position)) // 2p games, do not stop if can get rammed
 			)
 		{
 			best_move = make_pair(ship->position, -game.distance_from_objective(ship));
+			ship->objective->target_position = ship->position;
 			log::log(ship->to_string_ship() + " back to base but stopping on " + best_move.first.to_string_position());
 		}
 		else

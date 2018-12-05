@@ -127,19 +127,21 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 			if (game.distance_from_objective(closest_ship) <= 10)
 			{
-				game.reserved_halite += constants::DROPOFF_COST - closest_ship->halite - game.halite_on_position(closest_ship->position);
+				game.reserved_halite += max(constants::DROPOFF_COST - closest_ship->halite - game.halite_on_position(closest_ship->position), 0);
 				log::log(closest_ship->to_string_ship() + " is close to target dropoff, reserved halite " + to_string(game.reserved_halite));
 			}
 
-			if ((game.distance_from_objective(closest_ship) <= 5) && (game.me->halite + closest_ship->halite + game.halite_on_position(closest_ship->position) >= 3000))
+			if ((game.distance_from_objective(closest_ship) <= 5) && (game.me->halite + closest_ship->halite + game.halite_on_position(closest_ship->position) >= constants::DROPOFF_COST))
 			{
-				bool is_fake = (game.me->halite + closest_ship->halite + game.halite_on_position(closest_ship->position) < constants::DROPOFF_COST);
-				game.me->dropoffs[objective_id--] = make_shared<Dropoff>(Dropoff(game.my_id, -1, dropoff_objective.target_position.x, dropoff_objective.target_position.y, is_fake));
-				log::log(closest_ship->to_string_ship() + " is close to target dropoff, placed dropoff");
+				game.me->dropoffs[objective_id--] = make_shared<Dropoff>(Dropoff(game.my_id, -1, dropoff_objective.target_position.x, dropoff_objective.target_position.y, false));
+				log::log(closest_ship->to_string_ship() + " is close to target dropoff, placed fake dropoff");
 			}
 
 			log::log(closest_ship->to_string_ship() + " assigned to dropoff " + dropoff_objective.target_position.to_string_position());
 		}
+
+		// refresh shipyards to account for potentially newly placed
+		game.distance_manager.fill_closest_shipyard_or_dropoff(game);
 	}
 
 	/*
@@ -151,8 +153,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 		unordered_map<shared_ptr<Ship>, double> ships_to_block;
 		for (const shared_ptr<Ship>& ship : game.me->my_ships)
 			if (
-				!ship->assigned && 
-				game.get_constant("Block Enemy Base at End") &&
+				!ship->assigned &&
 				(
 					// if previously assigned to blockade
 					ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE) || 
@@ -202,11 +203,11 @@ void ObjectiveManager::assign_objectives(Game& game)
 
 		if (
 			ship->is_objective(Objective_Type::SUICIDE_ON_BASE) || 
-			(2 * game.distance(ship->position, game.distance_manager.get_closest_shipyard_or_dropoff(ship)) >= game.turns_remaining()) ||
+			(2 * game.distance(ship->position, game.get_closest_shipyard_or_dropoff(ship, false)) >= game.turns_remaining()) ||
 			(game.turns_remaining() <= 6)
 		)
 		{
-			game.assign_objective(ship, Objective_Type::SUICIDE_ON_BASE, game.distance_manager.get_closest_shipyard_or_dropoff(ship));
+			game.assign_objective(ship, Objective_Type::SUICIDE_ON_BASE, game.get_closest_shipyard_or_dropoff(ship, false));
 			ship->set_assigned();
 		}
 	}
@@ -220,12 +221,12 @@ void ObjectiveManager::assign_objectives(Game& game)
 		if (ship->assigned)
 			continue;
 
-		if (ship->is_objective(Objective_Type::BACK_TO_BASE) && (game.is_shipyard_or_dropoff(ship->position)))
+		if (ship->is_objective(Objective_Type::BACK_TO_BASE) && game.is_shipyard_or_dropoff(ship->position))
 			ship->clear_objective();
 
 		if ((ship->is_objective(Objective_Type::BACK_TO_BASE)) || (ship->is_full(0.9)))
 		{
-			game.assign_objective(ship, Objective_Type::BACK_TO_BASE, game.get_closest_shipyard_or_dropoff(ship, false));
+			game.assign_objective(ship, Objective_Type::BACK_TO_BASE, game.distance_manager.get_closest_shipyard_or_dropoff(ship));
 			ship->set_assigned();
 		}
 	}
@@ -272,7 +273,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 				log::log(best_ship->to_string_ship() + " assigned to area " + best_objective.target_position.to_string_position() + " with score " + to_string(best_score));
 
 				game.scorer.decreases_score_in_target_cell(best_ship, best_objective.target_position, 0.0, game);
-				game.scorer.decreases_score_in_target_area(best_ship, best_objective.target_position, game.get_constant("Score: Brute force reach"), game);
+				game.scorer.decreases_score_in_target_area(best_ship, best_objective.target_position, game);
 				game.assign_objective(best_ship, Objective_Type::EXTRACT_ZONE, best_objective.target_position, best_score);
 			}
 			else
