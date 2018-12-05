@@ -269,7 +269,8 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
 	bool is_two_player_game = game.is_two_player_game();
-	Objective_Type max_type;
+	int turns_remaining = game.turns_remaining();
+	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -284,12 +285,11 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			double total_score = halite / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
-			if ((int)(1.5 * total_distance) >= game.turns_remaining())
+			if ((int)(1.5 * total_distance) >= turns_remaining)
 				total_score = -DBL_MAX;
 
 			if (
-				game.get_constant("Enable Attack") &&
-				is_two_player_game && // 2p game
+				is_two_player_game &&
 				(grid_score_attack_allies_nearby[i][j] > 0.0) // I have more empty halite around
 				)
 			{

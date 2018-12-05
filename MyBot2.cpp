@@ -30,7 +30,6 @@ int main(int argc, char* argv[])
 	constants["Dropoff: No Go Zone"] = 7;
 
 	constants["Block Enemy Base at End"] = 1;
-	constants["Enable Attack"] = 1;
 
 	constants["Test"] = 0;
 
