@@ -30,6 +30,6 @@ namespace hlt
 		unordered_map<Position, double> position_to_block_on_enemy_base(const Position& enemy_base, const Game& game) const;
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game) const;
-		void Blocker::decrease_score_in_position(const Position& position, const Game& game);
+		void decrease_score_in_position(const Position& position, const Game& game);
 	};
 }
