@@ -115,8 +115,8 @@ namespace hlt
 			{
 				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
 
-				if (game_map->width == 32)
-					max_allowed_ships = (int)(0.8 * max_allowed_ships);
+				//if (game_map->width == 32)
+				//	max_allowed_ships = (int)(0.8 * max_allowed_ships);
 			}	
 			else
 			{
@@ -155,6 +155,7 @@ namespace hlt
 		int my_ships_number() const { return me->ships.size(); }
 		int my_dropoff_number() const { return me->dropoffs.size(); }
 		bool is_two_player_game() const { return players.size() == 2; }
+		bool is_four_player_game() const { return players.size() == 4; }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		vector<Position> my_shipyard_or_dropoff_positions() const
@@ -234,6 +235,23 @@ namespace hlt
 					return true;
 
 			return false;
+		}
+		bool close_to_crowded_area(const Position& position, int d) const
+		{
+			Position upper_left = Position(0, 0);
+			Position upper_right = Position((int)(game_map->width / 2.0), 0);
+			Position lower_left = Position(0, (int)(game_map->height / 2.0));
+			Position lower_right = Position((int)(game_map->width / 2.0), (int)(game_map->height / 2.0));
+
+			if (
+				(distance(position, upper_left) <= d) ||
+				(distance(position, upper_right) <= d) ||
+				(distance(position, lower_left) <= d) ||
+				(distance(position, lower_right) <= d)
+				)
+				return true;
+			else
+				return false;
 		}
 
 		int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }

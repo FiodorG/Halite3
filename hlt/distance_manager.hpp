@@ -24,7 +24,7 @@ namespace hlt
 		Position get_closest_shipyard_or_dropoff(const Position& position) const { return closest_shipyard_or_dropoff[position.y][position.x]; }
 		Position get_closest_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_closest_shipyard_or_dropoff(ship->position); }
 
-		int get_distance_cell_shipyard_or_dropoff(const Position& position) const { return distance_cell_shipyard_or_dropoff[position.y][position.x]; }
+		int get_distance_cell_shipyard_or_dropoff(const Position& position) const  { return distance_cell_shipyard_or_dropoff[position.y][position.x]; }
 		int get_distance_cell_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_distance_cell_shipyard_or_dropoff(ship->position); }
 	};
 }

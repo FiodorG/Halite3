@@ -11,14 +11,54 @@ using namespace std;
 
 void DistanceManager::fill_closest_shipyard_or_dropoff(const Game& game)
 {
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+	int radius = 4;
+	int area = 2 * radius * radius + 2 * radius + 1;
+
+	// gather dropoffs
+	vector<Position> base_or_dropoffs;
+	base_or_dropoffs.push_back(game.my_shipyard_position());
+	for (auto& dropoff_iterator : game.me->dropoffs)
+		base_or_dropoffs.push_back(dropoff_iterator.second->position);
+
+	// count enemies around each dropoff
+	unordered_map<Position, int> enemies_around;
+	for (auto& dropoff : base_or_dropoffs)
+	{
+		enemies_around[dropoff] = 0;
+
+		for (int i = 0; i < height; ++i)
+			for (int j = 0; j < width; ++j)
+				if (game.distance(Position(j, i), dropoff) <= 4)
+					enemies_around[dropoff] += 1;
+		
+		log::log("Dropoff: " + dropoff.to_string_position() + " has " + to_string(enemies_around[dropoff]) + " enemies around.");
+	}
+
+	// Find closest dropoff from each cell, discount by number of enemies around
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
 		{
 			Position position = Position(j, i);
-			Position shipyard_or_dropoff = game.get_closest_shipyard_or_dropoff(position);
+			Position closest_shipyard = Position();
+			double min_distance = DBL_MAX;
 
-			closest_shipyard_or_dropoff[i][j] = shipyard_or_dropoff;
-			distance_cell_shipyard_or_dropoff[i][j] = game.distance(shipyard_or_dropoff, position);
+			for (auto& dropoff : base_or_dropoffs)
+			{
+				double distance = (double)game.distance(position, dropoff);
+				
+				distance *= pow(1.05, max(enemies_around[dropoff] - 3, 0));
+
+				if (distance <= min_distance)
+				{
+					min_distance = distance;
+					closest_shipyard = dropoff;
+				}
+			}
+
+			closest_shipyard_or_dropoff[i][j] = closest_shipyard;
+			distance_cell_shipyard_or_dropoff[i][j] = game.distance(closest_shipyard, position);
 		}
 
 	//for (unsigned int i = 0; i < closest_shipyard_or_dropoff.size(); ++i)
