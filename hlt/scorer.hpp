@@ -47,10 +47,11 @@ namespace hlt
 
 		static double linear_increase(int x, int x_min, int x_max, double y_min, double y_max);
 		static double linear_decrease(int x, int x_min, int x_max, double y_min, double y_max);
+		static double linear_decrease(double x, double x_min, double x_max, double y_min, double y_max);
 		double butterfly(double x, double x_min, double x_mid, double x_max, double y_min, double y_mid, double y_max) const;
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
-		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, int radius, const Game& game);
+		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, const Game& game);
 		void decreases_score_in_target_cell(shared_ptr<Ship> ship, const Position& position, double mult, const Game& game);
 
 		// Shipyard construction
