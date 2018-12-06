@@ -323,7 +323,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				double halite_enemy = (double)game.mapcell(position)->ship->halite;
 				double halite_cell = (double)game.mapcell(position)->halite;
 				double halite_total = (halite_ally + halite_enemy + halite_cell);
-				int inspiration = grid_score_inspiration[i][j];
+				//int inspiration = grid_score_inspiration[i][j];
 
 				double score_attack_allies_nearby = max(grid_score_attack_allies_nearby[i][j] - (1000.0 - (double)halite_ally), 0.0);
 				double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby[i][j] - (1000.0 - (double)halite_enemy), 0.0);
