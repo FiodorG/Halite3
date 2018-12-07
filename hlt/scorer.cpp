@@ -166,8 +166,8 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 					int new_l = (((j - radius + l) % height) + height) % height;
 					double halite = (double)game.mapcell(new_k, new_l)->halite;
 
-					if (grid_score_inspiration[new_k][new_l] >= 2)
-						halite *= 2;
+					//if (grid_score_inspiration[new_k][new_l] >= 2)
+					//	halite *= 2;
 
 					int distance = game.distance(Position(i, j), Position(new_k, new_l));
 					if (distance <= radius)
@@ -182,7 +182,7 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				grid_score_dropoff[i][j] *= linear_decrease(enemies_around, 2.0, 3.0, 0.5, 1.0);*/
 
 			// add more weight in center for 4p games, uniformly in the area.
-			if (game.is_four_player_game() && game.close_to_crowded_area(Position(j, i), (int)((double)width / 6.0)))
+			if (game.is_four_player_game() && game.close_to_crowded_area(Position(j, i), width / 4))
 				grid_score_dropoff[i][j] *= 1.25;
 
 			// Any structure has 0 score
@@ -323,7 +323,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				double halite_enemy = (double)game.mapcell(position)->ship->halite;
 				double halite_cell = (double)game.mapcell(position)->halite;
 				double halite_total = (halite_ally + halite_enemy + halite_cell);
-				int inspiration = grid_score_inspiration[i][j];
+				//int inspiration = grid_score_inspiration[i][j];
 
 				double score_attack_allies_nearby = max(grid_score_attack_allies_nearby[i][j] - (1000.0 - (double)halite_ally), 0.0);
 				double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby[i][j] - (1000.0 - (double)halite_enemy), 0.0);
@@ -412,7 +412,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
-	double halite_to_decrease = (double)ship->missing_halite() / (double)area * (double)game.get_constant("Score: Remove Halite Multiplier");
+	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * (double)game.get_constant("Score: Remove Halite Multiplier");
 	// add max here?
 
 	for (int i = 0; i <= radius * 2; ++i)

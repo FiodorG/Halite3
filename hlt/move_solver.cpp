@@ -73,8 +73,8 @@ vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) cons
 bool MoveSolver::valid_move(const Position& position, const Game& game) const
 {
 	return (
-		(game.scorer.get_grid_score_move(position) == 0) ||
-		(game.scorer.get_grid_score_move(position) == 9) // put only if proba > 50%?
+		(game.scorer.get_grid_score_move(position) == 0)
+		//|| (game.scorer.get_grid_score_move(position) == 9) // put only if proba > 50%?
 		);
 }
 bool MoveSolver::enemy_at_position(const Position& position, const Game& game) const
