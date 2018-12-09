@@ -293,12 +293,11 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 			grid_score_can_stay_still[i][j] = -1.0;
 			Position position = Position(j, i);
 
-			// 4p games can always stay still
-			if (game.is_four_player_game())
-				grid_score_can_stay_still[i][j] = 1.0;
+			//if (game.is_four_player_game())
+			//	grid_score_can_stay_still[i][j] = 1.0;
 
 			// for now, can stay only if no enemies around
-			if (game.is_two_player_game())
+			if (game.is_four_player_game() || game.is_two_player_game())
 			{
 				if (grid_score_move[i][j] < 5)
 					grid_score_can_stay_still[i][j] = 1.0;
@@ -308,7 +307,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 			// !!!! make sure to use non decreased grid_score_attack_allies_nearby
 			// 2p games can never stay still, for now
-			if (false && game.is_two_player_game())
+			if (false && game.is_four_player_game())
 			{
 				grid_score_can_stay_still[i][j] = 0.0;
 
@@ -484,7 +483,10 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
-	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * (double)game.get_constant("Score: Remove Halite Multiplier");
+
+	double remove_multiplier = game.is_two_player_game()? (double)game.get_constant("Score: Remove Halite Multiplier 2p") : (double)game.get_constant("Score: Remove Halite Multiplier 4p");
+
+	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?
 
 	for (int i = 0; i <= radius * 2; ++i)

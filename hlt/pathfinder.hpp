@@ -32,6 +32,11 @@ namespace hlt
 		// Simple navigation
 		Position compute_direct_path(const Position& source_position, const Position& target_position, Game& game);
 		Position compute_direct_path_no_base(const Position& source_position, const Position& target_position, Game& game);
+		Position compute_direct_path_suicide(const Position& source_position, const Position& target_position, Game& game);
+
+		// Dijkstra suicide
+		vector<MapCell*> dijkstra_suicide(MapCell* source_cell, MapCell* target_cell, MapCell* enemy_base, const Game& game) const;
+		int compute_next_step_score_suicide(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, MapCell* enemy_base, const Game& game) const;
 
 		// Dijkstra block
 		vector<MapCell*> dijkstra_block (MapCell* source_cell, MapCell* target_cell, MapCell* enemy_base, const Game& game) const;
