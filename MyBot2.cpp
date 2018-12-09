@@ -20,18 +20,15 @@ int main(int argc, char* argv[])
 	constants["A* Heuristic"] = 20;
 	constants["A* Radius Ships Seen"] = 1;
 
-	constants["Score: Brute force reach"] = 4;
 	constants["Score: Smoothing radius"] = 3;
 	constants["Score: Inspiration Bonus"] = 2;
-	constants["Score: Remove Halite Multiplier"] = 4;
+
+	constants["Score: Remove Halite Multiplier 2p"] = 5;
+	constants["Score: Remove Halite Multiplier 4p"] = 8;
 
 	constants["Score: Attack radius"] = 5;
 
-	constants["Dropoff: No Go Zone"] = 7;
-
-	constants["Block Enemy Base at End"] = 1;
-
-	constants["Test"] = 0;
+	constants["Test"] = 1;
 
 	return mybot_internal("GSBot2", constants, rng_seed);
 }

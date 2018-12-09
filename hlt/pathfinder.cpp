@@ -52,6 +52,8 @@ Position PathFinder::compute_path(shared_ptr<Ship> ship, const Position& positio
 		target_position = compute_direct_path(ship->position, position, game);
 	else if (ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE))
 		target_position = compute_direct_path_no_base(ship->position, position, game);
+	else if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
+		target_position = compute_direct_path_suicide(ship->position, position, game);
 	else
 		target_position = compute_shortest_path(ship->position, position, game);
 
@@ -71,6 +73,24 @@ Position PathFinder::compute_direct_path_no_base(const Position& source_position
 
 	//clock_t start = clock();
 	vector<MapCell*> optimal_path = dijkstra_block(source_cell, target_cell, enemy_base_cell, game);
+	//log::log("Dijkstra for " + source_position.to_string_position() + " to " + target_position.to_string_position() + " took: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
+
+	if (optimal_path.size() > 1)
+		return optimal_path.at(1)->position;
+	else
+		return source_cell->position;
+}
+
+Position PathFinder::compute_direct_path_suicide(const Position& source_position, const Position& target_position, Game& game)
+{
+	if ((source_position == target_position) || (game.distance(source_position, target_position) == 1))
+		return target_position;
+
+	MapCell* source_cell = game.game_map->at(source_position);
+	MapCell* target_cell = game.game_map->at(target_position);
+
+	//clock_t start = clock();
+	vector<MapCell*> optimal_path = dijkstra_suicide(source_cell, target_cell, target_cell, game);
 	//log::log("Dijkstra for " + source_position.to_string_position() + " to " + target_position.to_string_position() + " took: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
 
 	if (optimal_path.size() > 1)
@@ -195,22 +215,10 @@ vector<MapCell*> PathFinder::dijkstra_path(MapCell* source_cell, MapCell* target
 
 	while (!frontier.empty())
 	{
-		// Pick the minimum distance unsettled cell
 		MapCell* current_cell = frontier.get();
 
-		// If current cell is the target, return its path
 		if (current_cell->position == target_cell->position)
-		{
-			//if (game.turn_number == 10)
-			//{
-			//	log_costs(cost_so_far, game);
-			//	log_path(reconstruct_path(source_cell, target_cell, came_from), game);
-			//}
-				
 			return reconstruct_path(source_cell, target_cell, came_from);
-		}
-
-		//log::log("Current cell:" + current_cell->position.to_string_position());
 
 		for (MapCell* next_cell : adjacent_cells_filtered(source_cell, target_cell, current_cell, game))
 		{
@@ -260,10 +268,8 @@ vector<MapCell*> PathFinder::dijkstra_block(MapCell* source_cell, MapCell* targe
 
 	while (!frontier.empty())
 	{
-		// Pick the minimum distance unsettled cell
 		MapCell* current_cell = frontier.get();
 
-		// If current cell is the target, return its path
 		if (current_cell->position == target_cell->position)
 			return reconstruct_path(source_cell, target_cell, came_from);
 
@@ -272,6 +278,54 @@ vector<MapCell*> PathFinder::dijkstra_block(MapCell* source_cell, MapCell* targe
 		for (MapCell* next_cell : adjacent_cells_all(current_cell, game))
 		{
 			int new_cost = cost_so_far[current_cell] + compute_next_step_score_block(source_cell, current_cell, next_cell, enemy_base, game);
+
+			if ((cost_so_far.find(next_cell) == cost_so_far.end()) || (new_cost < cost_so_far[next_cell]))
+			{
+				cost_so_far[next_cell] = new_cost;
+				came_from[next_cell] = current_cell;
+				frontier.put(next_cell, new_cost + heuristic(next_cell, target_cell, game));
+			}
+		}
+	}
+
+	return vector<MapCell*>(1, source_cell);
+}
+
+int PathFinder::compute_next_step_score_suicide(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, MapCell* base, const Game& game) const
+{
+	int move_score = 1;
+
+	if (game.game_map->calculate_distance(source_cell->position, next_cell->position) <= game.get_constant("A* Radius Ships Seen"))
+		move_score += (game.scorer.get_grid_score_move(next_cell->position) > 0) * 999999;
+
+	if (game.game_map->calculate_distance(source_cell->position, base->position) <= 4)
+		if (game.scorer.get_grid_score_move(next_cell->position) >= 9)
+			move_score = 1;
+
+	return move_score;
+}
+
+vector<MapCell*> PathFinder::dijkstra_suicide(MapCell* source_cell, MapCell* target_cell, MapCell* base, const Game& game) const
+{
+	unordered_map<MapCell*, MapCell*> came_from;
+	came_from[source_cell] = source_cell;
+
+	PriorityQueue<MapCell*, int> frontier;
+	frontier.put(source_cell, 0);
+
+	unordered_map<MapCell*, int> cost_so_far;
+	cost_so_far[source_cell] = 0;
+
+	while (!frontier.empty())
+	{
+		MapCell* current_cell = frontier.get();
+
+		if (current_cell->position == target_cell->position)
+			return reconstruct_path(source_cell, target_cell, came_from);
+
+		for (MapCell* next_cell : adjacent_cells_all(current_cell, game))
+		{
+			int new_cost = cost_so_far[current_cell] + compute_next_step_score_suicide(source_cell, current_cell, next_cell, base, game);
 
 			if ((cost_so_far.find(next_cell) == cost_so_far.end()) || (new_cost < cost_so_far[next_cell]))
 			{

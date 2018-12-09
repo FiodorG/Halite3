@@ -22,7 +22,9 @@ int main(int argc, char* argv[])
 
 	constants["Score: Smoothing radius"] = 3;
 	constants["Score: Inspiration Bonus"] = 2;
-	constants["Score: Remove Halite Multiplier"] = 5;
+
+	constants["Score: Remove Halite Multiplier 2p"] = 5;
+	constants["Score: Remove Halite Multiplier 4p"] = 8;
 
 	constants["Score: Attack radius"] = 5;
 
