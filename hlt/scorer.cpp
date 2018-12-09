@@ -244,17 +244,14 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Attack radius");
 
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
 		{
 			// Initialize to bad score
 			grid_score_attack_allies_nearby[i][j] = 0.0;
 			grid_score_attack_enemies_nearby[i][j] = 0.0;
+
 			Position enemy_position = Position(j, i);
-
-			if (!game.enemy_in_cell(enemy_position))
-				continue;
-
 			double number_of_allies = 0.0, number_of_enemies = 0.0;
 
 			// Enemies and allies around
@@ -284,6 +281,80 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 	//log::log_vectorvector(grid_score_attack_allies_nearby);
 	//log::log_vectorvector(grid_score_attack_enemies_nearby);
 }
+void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
+{
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+		{
+			// Initialize to bad score
+			grid_score_can_stay_still[i][j] = -1.0;
+			Position position = Position(j, i);
+
+			// 4p games can always stay still
+			if (game.is_four_player_game())
+				grid_score_can_stay_still[i][j] = 1.0;
+
+			// for now, can stay only if no enemies around
+			if (game.is_two_player_game())
+			{
+				if (grid_score_move[i][j] < 5)
+					grid_score_can_stay_still[i][j] = 1.0;
+				else
+					grid_score_can_stay_still[i][j] = 0.0;
+			}
+
+			// !!!! make sure to use non decreased grid_score_attack_allies_nearby
+			// 2p games can never stay still, for now
+			if (false && game.is_two_player_game())
+			{
+				grid_score_can_stay_still[i][j] = 0.0;
+
+				double halite_ally = (double)game.mapcell(position)->ship->halite;
+				double halite_cell = (double)game.mapcell(position)->halite;
+
+				// Find adjacent enemies
+				unordered_map<shared_ptr<Ship>, double> adjacent_enemies;
+				for (int k = 0; k <= 2; ++k)
+					for (int l = 0; l <= 2; ++l)
+					{
+						int new_k = (((i - 1 + k) % width) + width) % width;
+						int new_l = (((j - 1 + l) % height) + height) % height;
+						Position enemy_position = Position(new_l, new_k);
+
+						if (game.enemy_in_cell(enemy_position)) 
+							adjacent_enemies[game.mapcell(enemy_position)->ship] = 0.0;
+					}
+
+				// Fill score for attack from each adjacent enemy
+				for (auto& enemy_ship : adjacent_enemies)
+				{
+					double halite_enemy = (double)enemy_ship.first->halite;
+
+					double score_attack_allies_nearby = max(grid_score_attack_allies_nearby[i][j] - (1000.0 - (double)halite_ally), 0.0);
+					double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby[i][j] - (1000.0 - (double)halite_enemy), 0.0);
+					double proba_of_me_getting_back = score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby);
+
+					double score_ally = -halite_ally + (halite_ally + halite_enemy + halite_cell) * proba_of_me_getting_back;
+					double score_enemy = -halite_enemy + (halite_ally + halite_enemy + halite_cell) * (1.0 - proba_of_me_getting_back);
+
+					adjacent_enemies[enemy_ship.first] = score_ally - score_enemy;
+				}
+
+				// fill worst score
+				double worst_score = DBL_MAX;
+				for (auto& enemy_ship : adjacent_enemies)
+					if (enemy_ship.second < worst_score)
+						worst_score = enemy_ship.second;
+				
+				grid_score_can_stay_still[i][j] = worst_score;
+			}
+		}
+
+	//log::log_vectorvector(grid_score_can_stay_still);
+}
 
 Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
 {
@@ -312,10 +383,11 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)
-				total_score = -DBL_MAX;
+				total_score -= 999999.0;
 
 			if (
 				is_two_player_game &&
+				(grid_score_move[i][j] == 10) && // enemy in cell
 				(grid_score_attack_allies_nearby[i][j] > 0.0) // I have more empty halite around
 				)
 			{
