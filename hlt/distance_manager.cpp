@@ -71,6 +71,12 @@ void DistanceManager::fill_closest_shipyard_or_dropoff(const Game& game)
 	//		line += closest_shipyard_or_dropoff[i][j].to_string_position() + " ";
 	//	line += " | " + padding + to_string(i);
 
+	//	padding = (i <= 9) ? "0" : "";
+	//	line = "" + padding + to_string(i) + " | ";
+	//	for (unsigned int j = 0; j < distance_cell_shipyard_or_dropoff.size(); ++j)
+	//		line += to_string(distance_cell_shipyard_or_dropoff[i][j]) + " ";
+	//	line += " | " + padding + to_string(i);
+
 	//	hlt::log::log(line);
 	//}
 }

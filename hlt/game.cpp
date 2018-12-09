@@ -46,6 +46,7 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 	scorer.grid_score_inspiration = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
 	scorer.grid_score_attack_allies_nearby = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 	scorer.grid_score_attack_enemies_nearby = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
+	scorer.grid_score_can_stay_still = vector<vector<double>>(game_map->height, vector<double>(game_map->width, 0.0));
 
 	distance_manager.closest_shipyard_or_dropoff = vector<vector<Position>>(game_map->height, vector<Position>(game_map->width, Position()));
 	distance_manager.distance_cell_shipyard_or_dropoff = vector<vector<int>>(game_map->height, vector<int>(game_map->width, 0));
@@ -115,6 +116,7 @@ void hlt::Game::update_frame()
 	scorer.update_grid_score_dropoff(*this);
 	scorer.update_grid_score_highway(*this);
 	scorer.update_grid_score_targets(*this);
+	scorer.update_grid_score_can_stay_still(*this);
 
 	// Scorer
 	scorer.halite_total = 0;

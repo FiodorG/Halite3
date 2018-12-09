@@ -24,6 +24,7 @@ namespace hlt
 		vector<vector<int>> grid_score_inspiration;
 		vector<vector<double>> grid_score_attack_allies_nearby;
 		vector<vector<double>> grid_score_attack_enemies_nearby;
+		vector<vector<double>> grid_score_can_stay_still;
 		int halite_initial;
 		int halite_total;
 		int halite_percentile;
@@ -61,5 +62,9 @@ namespace hlt
 		void update_grid_score_targets(const Game& game);
 		double get_grid_score_allies_nearby(const Position& position) const { return grid_score_attack_allies_nearby[position.y][position.x]; }
 		double get_grid_score_attack_enemies_nearby(const Position& position) const { return grid_score_attack_enemies_nearby[position.y][position.x]; }
+
+		// Can Stay Still
+		void update_grid_score_can_stay_still(const Game& game);
+		double get_grid_score_can_stay_still(const Position& position) const { return grid_score_can_stay_still[position.y][position.x]; }
 	};
 }

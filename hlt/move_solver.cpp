@@ -72,18 +72,15 @@ vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) cons
 
 bool MoveSolver::valid_move(const Position& position, const Game& game) const
 {
-	return (
-		(game.scorer.get_grid_score_move(position) == 0)
-		//|| (game.scorer.get_grid_score_move(position) == 9) // put only if proba > 50%?
-		);
+	return game.scorer.get_grid_score_move(position) == 0;
 }
-bool MoveSolver::enemy_at_position(const Position& position, const Game& game) const
+bool MoveSolver::allied_priority_ships(const Position& position, const Game& game) const
 {
-	return game.scorer.get_grid_score_move(position) == 10;
+	return game.scorer.get_grid_score_move(position) == 2;
 }
-bool MoveSolver::no_priority_ships(const Position& position, const Game& game) const
+bool MoveSolver::can_stay_still(const Position& position, const Game& game) const
 {
-	return game.scorer.get_grid_score_move(position) < 2;
+	return game.scorer.get_grid_score_can_stay_still(position) > 0.0;
 }
 
 double MoveSolver::score_path(
@@ -103,7 +100,10 @@ double MoveSolver::score_path(
 	unordered_map<Position, int> visited_positions;
 
 	// Do not stay on spot if more important ship is passing
-	if (!no_priority_ships(current_position, game) && (path[0] == Direction::STILL))
+	if ((path[0] == Direction::STILL) && allied_priority_ships(current_position, game))
+		return -9999999.0;
+
+	if ((path[0] == Direction::STILL) && !can_stay_still(current_position, game))
 		return -9999999.0;
 
 	for (Direction direction : path)
@@ -167,7 +167,7 @@ double MoveSolver::score_path(
 		line += " " + to_string(max(cargo - (double)ship->halite, 0.0));
 		line += " " + to_string(burned);
 		line += " " + to_string(moves);
-		line += " " + to_string(d_distance * 5.0);
+		line += " " + to_string(d_distance * 15.0);
 		line += " " + to_string(score);
 		log::log(line);
 	}
