@@ -251,6 +251,9 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 			grid_score_attack_allies_nearby[i][j] = 0.0;
 			grid_score_attack_enemies_nearby[i][j] = 0.0;
 
+			grid_score_attack_allies_nearby_initial[i][j] = 0.0;
+			grid_score_attack_enemies_nearby_initial[i][j] = 0.0;
+
 			Position enemy_position = Position(j, i);
 			double number_of_allies = 0.0, number_of_enemies = 0.0;
 
@@ -276,6 +279,9 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 
 			grid_score_attack_allies_nearby[i][j] = number_of_allies;
 			grid_score_attack_enemies_nearby[i][j] = number_of_enemies;
+
+			grid_score_attack_allies_nearby_initial[i][j] = number_of_allies;
+			grid_score_attack_enemies_nearby_initial[i][j] = number_of_enemies;
 		}
 
 	//log::log_vectorvector(grid_score_attack_allies_nearby);
@@ -289,28 +295,21 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 		{
-			// Initialize to bad score
-			grid_score_can_stay_still[i][j] = -1.0;
+			// Initialize to good score
+			grid_score_can_stay_still[i][j] = 1.0;
 			Position position = Position(j, i);
 
 			//if (game.is_four_player_game())
 			//	grid_score_can_stay_still[i][j] = 1.0;
 
-			// for now, can stay only if no enemies around
 			if (game.is_four_player_game() || game.is_two_player_game())
 			{
-				if (grid_score_move[i][j] < 5)
-					grid_score_can_stay_still[i][j] = 1.0;
-				else
+				if (grid_score_move[i][j] > 5)
 					grid_score_can_stay_still[i][j] = 0.0;
 			}
 
-			// !!!! make sure to use non decreased grid_score_attack_allies_nearby
-			// 2p games can never stay still, for now
-			if (false && game.is_four_player_game())
+			if (game.is_four_player_game() && game.ally_in_cell(position))
 			{
-				grid_score_can_stay_still[i][j] = 0.0;
-
 				double halite_ally = (double)game.mapcell(position)->ship->halite;
 				double halite_cell = (double)game.mapcell(position)->halite;
 
@@ -323,7 +322,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 						int new_l = (((j - 1 + l) % height) + height) % height;
 						Position enemy_position = Position(new_l, new_k);
 
-						if (game.enemy_in_cell(enemy_position)) 
+						if (game.enemy_in_cell(enemy_position) && (game.distance(position, enemy_position) <= 1)) 
 							adjacent_enemies[game.mapcell(enemy_position)->ship] = 0.0;
 					}
 
@@ -332,8 +331,8 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 				{
 					double halite_enemy = (double)enemy_ship.first->halite;
 
-					double score_attack_allies_nearby = max(grid_score_attack_allies_nearby[i][j] - (1000.0 - (double)halite_ally), 0.0);
-					double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby[i][j] - (1000.0 - (double)halite_enemy), 0.0);
+					double score_attack_allies_nearby = max(grid_score_attack_allies_nearby_initial[i][j] - (1000.0 - (double)halite_ally), 0.0);
+					double score_attack_enemies_nearby = max(grid_score_attack_enemies_nearby_initial[i][j] - (1000.0 - (double)halite_enemy), 0.0);
 					double proba_of_me_getting_back = score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby);
 
 					double score_ally = -halite_ally + (halite_ally + halite_enemy + halite_cell) * proba_of_me_getting_back;
@@ -347,12 +346,31 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 				for (auto& enemy_ship : adjacent_enemies)
 					if (enemy_ship.second < worst_score)
 						worst_score = enemy_ship.second;
-				
+
 				grid_score_can_stay_still[i][j] = worst_score;
 			}
 		}
 
 	//log::log_vectorvector(grid_score_can_stay_still);
+}
+void hlt::Scorer::update_grid_score_allies_around(const Game& game)
+{
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+			grid_score_allies_around[i][j] = 0;
+
+	for (auto& ship : game.me->ships)
+	{
+		for (int i = 0; i < height; ++i)
+			for (int j = 0; j < width; ++j)
+				if (game.distance(Position(j, i), ship.second->position) <= 1)
+					grid_score_allies_around[i][j] += 1;
+	}
+
+	//log::log_vectorvector(grid_score_allies_around);
 }
 
 Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
