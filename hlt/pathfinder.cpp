@@ -298,7 +298,10 @@ int PathFinder::compute_next_step_score_suicide(MapCell* source_cell, MapCell* c
 	if (game.game_map->calculate_distance(source_cell->position, next_cell->position) <= game.get_constant("A* Radius Ships Seen"))
 		move_score += (game.scorer.get_grid_score_move(next_cell->position) > 0) * 999999;
 
-	if (game.game_map->calculate_distance(source_cell->position, base->position) <= 4)
+	if (
+		(game.game_map->calculate_distance(source_cell->position, base->position) <= 4) ||
+		(game.turns_remaining() <= 8)
+	)
 		if (game.scorer.get_grid_score_move(next_cell->position) >= 9)
 			move_score = 1;
 
