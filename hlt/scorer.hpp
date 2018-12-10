@@ -22,14 +22,34 @@ namespace hlt
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
 		vector<vector<int>> grid_score_inspiration;
+
 		vector<vector<double>> grid_score_attack_allies_nearby;
 		vector<vector<double>> grid_score_attack_enemies_nearby;
+		vector<vector<double>> grid_score_attack_allies_nearby_initial;
+		vector<vector<double>> grid_score_attack_enemies_nearby_initial;
+
 		vector<vector<double>> grid_score_can_stay_still;
+		vector<vector<int>> grid_score_can_move;
+
 		int halite_initial;
 		int halite_total;
 		int halite_percentile;
 
-		Scorer() : halite_initial(0), halite_total(0), halite_percentile(0) {};
+		Scorer(int height, int width) : halite_initial(0), halite_total(0), halite_percentile(0) 
+		{
+			grid_score_move = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_highway = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_extract = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_dropoff = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_extract_smooth = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_inspiration = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_attack_allies_nearby = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_attack_enemies_nearby = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_attack_allies_nearby_initial = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_attack_enemies_nearby_initial = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_can_move = vector<vector<int>>(height, vector<int>(width, 0.0));
+		};
 		
 		// Move scorer
 		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
@@ -63,8 +83,10 @@ namespace hlt
 		double get_grid_score_allies_nearby(const Position& position) const { return grid_score_attack_allies_nearby[position.y][position.x]; }
 		double get_grid_score_attack_enemies_nearby(const Position& position) const { return grid_score_attack_enemies_nearby[position.y][position.x]; }
 
-		// Can Stay Still
+		// Can Stay Still and Move
 		void update_grid_score_can_stay_still(const Game& game);
+		void update_grid_score_can_move(const Game& game);
 		double get_grid_score_can_stay_still(const Position& position) const { return grid_score_can_stay_still[position.y][position.x]; }
+		double get_grid_score_can_move(const Position& position) const { return grid_score_can_move[position.y][position.x]; }
 	};
 }
