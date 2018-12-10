@@ -200,6 +200,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Smoothing radius");
+	double halite_multiplier = game.is_two_player_game()? 2.0 : 3.0;
 
 	for (int i = 0; i < game.game_map->height; ++i)
 		for (int j = 0; j < game.game_map->width; ++j)
@@ -221,7 +222,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 
 					// Add bonus for inspiration
 					if (grid_score_inspiration[new_k][new_l] >= 2)
-						halite *= (double)game.get_constant("Score: Inspiration Bonus");
+						halite *= halite_multiplier;
 
 					int distance = game.distance(Position(i, j), Position(new_k, new_l));
 					if (distance <= radius)
