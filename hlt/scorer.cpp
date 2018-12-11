@@ -348,7 +348,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 					if (enemy_ship.second < worst_score)
 						worst_score = enemy_ship.second;
 
-				grid_score_can_stay_still[i][j] = worst_score;
+				grid_score_can_stay_still[i][j] = 1000.0; //worst_score;
 			}
 		}
 
