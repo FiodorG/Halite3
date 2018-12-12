@@ -292,7 +292,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? 0.0 : 200.0;
+	double score_bump = game.is_two_player_game() ? -600.0 : -300.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
