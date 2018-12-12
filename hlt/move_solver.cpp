@@ -96,6 +96,7 @@ double MoveSolver::score_path(
 	int cargo = ship->halite;
 	int burned = 0;
 	int moves = 0;
+	double distance_multiplier = game.is_two_player_game() ? 25.0 : 25.0;
 
 	unordered_map<Position, int> visited_positions;
 
@@ -155,7 +156,7 @@ double MoveSolver::score_path(
 	if ((distance <= 2) && (final_distance <= 2))
 		d_distance = 0; // if close to objective can move freely
 
-	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * 25.0;
+	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
 
 	if (false)
 	{

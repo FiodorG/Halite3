@@ -35,6 +35,7 @@ namespace hlt
         unique_ptr<GameMap> game_map;
 		unordered_map<string, int> constants;
 		int reserved_halite;
+		int number_of_players;
 
 		// For timer
 		clock_t start;
@@ -154,8 +155,8 @@ namespace hlt
 		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		int my_ships_number() const { return me->ships.size(); }
 		int my_dropoff_number() const { return me->dropoffs.size(); }
-		bool is_two_player_game() const { return players.size() == 2; }
-		bool is_four_player_game() const { return players.size() == 4; }
+		bool is_two_player_game() const { return number_of_players == 2; }
+		bool is_four_player_game() const { return number_of_players == 4; }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		vector<Position> my_shipyard_or_dropoff_positions() const

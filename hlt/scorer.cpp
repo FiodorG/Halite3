@@ -292,6 +292,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
+	double score_bump = game.is_two_player_game() ? 0.0 : 200.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -309,7 +310,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 					grid_score_can_stay_still[i][j] = 0.0;
 			}
 
-			if (game.is_four_player_game() && game.ally_in_cell(position))
+			if (game.ally_in_cell(position))
 			{
 				double halite_ally = (double)game.mapcell(position)->ship->halite;
 				double halite_cell = (double)game.mapcell(position)->halite;
@@ -348,7 +349,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 					if (enemy_ship.second < worst_score)
 						worst_score = enemy_ship.second;
 
-				grid_score_can_stay_still[i][j] = 1000.0; //worst_score;
+				grid_score_can_stay_still[i][j] = worst_score + score_bump;
 			}
 		}
 
