@@ -27,6 +27,7 @@ namespace hlt
 		vector<vector<double>> grid_score_attack_enemies_nearby;
 		vector<vector<double>> grid_score_attack_allies_nearby_initial;
 		vector<vector<double>> grid_score_attack_enemies_nearby_initial;
+		vector<vector<double>> grid_score_attack_win_proba;
 
 		vector<vector<double>> grid_score_can_stay_still;
 		vector<vector<int>> grid_score_allies_around;
@@ -48,6 +49,7 @@ namespace hlt
 			grid_score_attack_enemies_nearby = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_attack_allies_nearby_initial = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_attack_enemies_nearby_initial = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_attack_win_proba = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_allies_around = vector<vector<int>>(height, vector<int>(width, 0));
 		};
@@ -96,6 +98,7 @@ namespace hlt
 		void update_grid_score_targets(const Game& game);
 		double get_grid_score_allies_nearby(const Position& position) const { return grid_score_attack_allies_nearby[position.y][position.x]; }
 		double get_grid_score_attack_enemies_nearby(const Position& position) const { return grid_score_attack_enemies_nearby[position.y][position.x]; }
+		double get_grid_score_win_proba(const Position& position) const { return grid_score_attack_win_proba[position.y][position.x]; }
 
 		// Can Stay Still and Move
 		void update_grid_score_can_stay_still(const Game& game);

@@ -283,16 +283,23 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 
 			grid_score_attack_allies_nearby_initial[i][j] = number_of_allies;
 			grid_score_attack_enemies_nearby_initial[i][j] = number_of_enemies;
+
+			// win proba
+			if (number_of_allies + number_of_enemies > 0.0)
+				grid_score_attack_win_proba[i][j] = number_of_allies / (number_of_allies + number_of_enemies);
+			else
+				grid_score_attack_win_proba[i][j] = 0.0;
 		}
 
 	//log::log_vectorvector(grid_score_attack_allies_nearby);
 	//log::log_vectorvector(grid_score_attack_enemies_nearby);
+	//log::log_vectorvector(grid_score_attack_win_proba);
 }
 void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? -600.0 : -300.0;
+	double score_bump = game.is_two_player_game() ? 0.0 : 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -307,10 +314,10 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 			if (game.is_four_player_game() || game.is_two_player_game())
 			{
 				if (grid_score_move[i][j] > 5)
-					grid_score_can_stay_still[i][j] = 0.0;
+					grid_score_can_stay_still[i][j] = -1.0;
 			}
 
-			if (game.ally_in_cell(position))
+			if (game.is_four_player_game() && game.ally_in_cell(position))
 			{
 				double halite_ally = (double)game.mapcell(position)->ship->halite;
 				double halite_cell = (double)game.mapcell(position)->halite;
