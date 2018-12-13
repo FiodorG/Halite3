@@ -85,5 +85,8 @@ namespace hlt
 		bool allied_priority_ships(const Position& position, const Game& game) const;
 		bool can_stay_still(const Position& position, const Game& game) const;
 		vector<vector<Direction>> get_all_permutations(int move_number) const;
+
+		bool is_stuck_ship(shared_ptr<Ship> ship, const Game& game) const;
+		Direction best_evade_direction(shared_ptr<Ship> ship, const Game& game) const;
 	};
 }

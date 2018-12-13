@@ -133,7 +133,11 @@ double MoveSolver::score_path(
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
 
-			if (!valid_move(current_position, game) || (game.distance(ship->target_position(), current_position) > max(distance, reach) + distance_margin))
+			if (game.distance(ship->target_position(), current_position) > max(distance, reach) + distance_margin)
+			{
+				return -9999999.0;
+			}
+			else if (!valid_move(current_position, game))
 			{
 				return -9999999.0;
 			}
@@ -185,6 +189,75 @@ bool is_null_path(const vector<Direction>& path)
 	return true;
 }
 
+bool MoveSolver::is_stuck_ship(shared_ptr<Ship> ship, const Game& game) const
+{
+	Position north_position = game.game_map->directional_offset(ship->position, Direction::NORTH);
+	Position south_position = game.game_map->directional_offset(ship->position, Direction::SOUTH);
+	Position east_position = game.game_map->directional_offset(ship->position, Direction::EAST);
+	Position west_position = game.game_map->directional_offset(ship->position, Direction::WEST);
+
+	bool enemy_close = (
+		(game.scorer.get_grid_score_move(north_position) == 10) ||
+		(game.scorer.get_grid_score_move(south_position) == 10) ||
+		(game.scorer.get_grid_score_move(east_position) == 10) ||
+		(game.scorer.get_grid_score_move(west_position) == 10)
+	);
+
+	bool unfavorable_combat = game.scorer.get_grid_score_can_stay_still(ship->position) <= 0.0;
+
+	bool enemy_blocks_all_moves = (
+		(game.scorer.get_grid_score_move(north_position) > 0) &&
+		(game.scorer.get_grid_score_move(south_position) > 0) &&
+		(game.scorer.get_grid_score_move(east_position) > 0) &&
+		(game.scorer.get_grid_score_move(west_position) > 0)
+	);
+
+	return enemy_close && unfavorable_combat && enemy_blocks_all_moves;
+}
+
+Direction MoveSolver::best_evade_direction(shared_ptr<Ship> ship, const Game& game) const
+{
+	Position north_position = game.game_map->directional_offset(ship->position, Direction::NORTH);
+	Position south_position = game.game_map->directional_offset(ship->position, Direction::SOUTH);
+	Position east_position = game.game_map->directional_offset(ship->position, Direction::EAST);
+	Position west_position = game.game_map->directional_offset(ship->position, Direction::WEST);
+
+	vector<double> scores;
+	vector<Direction> directions;
+
+	if ((game.scorer.get_grid_score_move(north_position) > 2) && ((game.scorer.get_grid_score_move(north_position) < 10)))
+	{
+		scores.push_back(game.scorer.get_grid_score_win_proba(north_position));
+		directions.push_back(Direction::NORTH);
+	}
+
+	if ((game.scorer.get_grid_score_move(south_position) > 2) && ((game.scorer.get_grid_score_move(south_position) < 10)))
+	{
+		scores.push_back(game.scorer.get_grid_score_win_proba(south_position));
+		directions.push_back(Direction::SOUTH);
+	}
+
+	if ((game.scorer.get_grid_score_move(east_position) > 2) && ((game.scorer.get_grid_score_move(east_position) < 10)))
+	{
+		scores.push_back(game.scorer.get_grid_score_win_proba(east_position));
+		directions.push_back(Direction::EAST);
+	}
+
+	if ((game.scorer.get_grid_score_move(west_position) > 2) && ((game.scorer.get_grid_score_move(west_position) < 10)))
+	{
+		scores.push_back(game.scorer.get_grid_score_win_proba(west_position));
+		directions.push_back(Direction::WEST);
+	}
+
+	if (!scores.size())
+		return Direction::STILL;
+	else
+	{
+		int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
+		return directions[best_score_index];
+	}
+}
+
 pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const
 {
 	vector<double> scores((int)pow(5, reach), 0.0);
@@ -222,6 +295,15 @@ pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship,
 			scores[i++] = score_path(ship, path, reach, distance_margin + 1, game);
 		best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
 		best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
+	}
+
+	// If move is to stay still, probably we are stuck by enemies, try evade movement
+	if (is_null_path((*path_permutations)[best_score_index]))
+	{
+		log::log("Trying evade for " + ship->to_string_ship());
+
+		if (is_stuck_ship(ship, game))
+			best_direction = best_evade_direction(ship, game);
 	}
 
 	string line = "";
