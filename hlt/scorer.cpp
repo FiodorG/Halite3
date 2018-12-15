@@ -69,27 +69,6 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 				grid_score_move[i][j] = 0;
 		}
 }
-void hlt::Scorer::update_grid_score_highway(const Game& game)
-{
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
-		{
-			grid_score_highway[i][j] = 1.0;
-
-			// If enemy is in contiguous cell, bad score.
-			for (Position& position : game.my_shipyard_or_dropoff_positions())
-			{
-				int distance = game.game_map->calculate_distance_from_axis(game.game_map->cells[i][j].position, position);
-
-				if (distance == 0)
-					grid_score_highway[i][j] = 0.0;
-				else if (distance == 1)
-					grid_score_highway[i][j] = 0.5;
-				else
-					grid_score_highway[i][j] = 1.0;
-			}
-		}
-}
 void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 {
 	for (int i = 0; i < game.game_map->height; ++i)
@@ -202,8 +181,8 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	int radius = game.get_constant("Score: Smoothing radius");
 	double halite_multiplier = game.is_two_player_game()? 2.0 : 3.0;
 
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
 		{
 			// Initialize to 0
 			grid_score_extract_smooth[i][j] = 0.0;
@@ -232,6 +211,29 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			// Any structure has 0 score
 			if (game.mapcell(Position(j, i))->has_structure())
 				grid_score_extract_smooth[i][j] = 0.0;
+
+			// on small 4p games, go in the middle more aggressively first
+			if (game.is_four_player_game() && (game.game_map->width <= 40))
+			{
+				int distance_inf_from_center = game.game_map->calculate_distance_from_axis(Position(j, i), Position(width / 2, height / 2));
+				int distance_inf_from_corner = game.game_map->calculate_distance_from_axis(Position(j, i), Position(0, 0));
+				int distance_from_center = game.distance(Position(j, i), Position(width / 2, height / 2));
+				int distance_from_corner = game.distance(Position(j, i), Position(0, 0));
+				int radius = width / 8; // 4 for 32, 5 for 40
+				double multiplier = 1.5;
+
+				if (distance_inf_from_center < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_center, 0, radius, 1.0, multiplier);
+
+				if (distance_inf_from_corner < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_corner, 0, radius, 1.0, multiplier);
+
+				if (distance_from_center < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_center, 0, radius, 1.0, multiplier);
+
+				if (distance_from_corner < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
+			}
 
 			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
 		}
