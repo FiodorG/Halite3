@@ -133,10 +133,6 @@ double MoveSolver::score_path(
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
 
-			//if (game.distance(ship->target_position(), current_position) > max(distance, reach) + distance_margin)
-			//{
-			//	return -9999999.0;
-			//}
 			if (!valid_move(current_position, game))
 			{
 				return -9999999.0;
@@ -269,33 +265,6 @@ pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship,
 
 	int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
 	Direction best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
-
-	// If couldn't compute good move, try again with margin of 1 more
-	//if (scores[best_score_index] == -9999999.0)
-	//{
-	//	log::log("No good move computed for " + ship->to_string_ship() + " trying with margin of 1.");
-
-	//	i = 0;
-	//	scores = vector<double>((int)pow(5, reach), 0.0);
-	//	for (const vector<Direction>& path : *path_permutations)
-	//		scores[i++] = score_path(ship, path, reach, distance_margin + 1, game);
-
-	//	best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
-	//	best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
-	//}
-
-	//// If move is to stay still, try around a bit
-	//if (is_null_path((*path_permutations)[best_score_index]))
-	//{
-	//	log::log("Null path computed for " + ship->to_string_ship() + " trying with margin of 1.");
-
-	//	i = 0;
-	//	scores = vector<double>((int)pow(5, reach), 0.0);
-	//	for (const vector<Direction>& path : *path_permutations)
-	//		scores[i++] = score_path(ship, path, reach, distance_margin + 1, game);
-	//	best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
-	//	best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
-	//}
 
 	// If move is to stay still, probably we are stuck by enemies, try evade movement
 	if (is_null_path((*path_permutations)[best_score_index]))

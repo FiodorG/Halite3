@@ -40,7 +40,6 @@ namespace hlt
 		Scorer(int height, int width) : halite_initial(0), halite_total(0), halite_percentile(0) 
 		{
 			grid_score_move = vector<vector<int>>(height, vector<int>(width, 0));
-			grid_score_highway = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_extract = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_dropoff = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_extract_smooth = vector<vector<double>>(height, vector<double>(width, 0.0));
@@ -61,7 +60,6 @@ namespace hlt
 			update_grid_score_inspiration(game);
 			update_grid_score_extract(game);
 			update_grid_score_dropoff(game);
-			update_grid_score_highway(game);
 			update_grid_score_targets(game);
 			update_grid_score_can_stay_still(game);
 			update_grid_score_allies_around(game);
@@ -71,9 +69,7 @@ namespace hlt
 		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
 		void flush_grid_score(const Position& position);
 		int get_grid_score_move(const Position& position) const { return grid_score_move[position.y][position.x]; }
-		double get_grid_score_highway(const Position& position) const { return grid_score_highway[position.y][position.x]; }
 		void update_grid_score_move(const Game& game);
-		void update_grid_score_highway(const Game& game);
 
 		// Strategic extraction scorer
 		void update_grid_score_inspiration(const Game& game);
