@@ -75,18 +75,68 @@ namespace hlt
 				exit(1);
 			}
 		}
+		vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) const
+		{
+			vector<Direction> directions = { Direction::STILL, Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST };
+
+			vector<vector<Direction>> all_path_permutations((int)pow(5, move_number));
+
+			if (move_number == 2)
+			{
+				int i = 0;
+				for (Direction direction1 : directions)
+					for (Direction direction2 : directions)
+						all_path_permutations[i++] = { direction1, direction2 };
+			}
+			else if (move_number == 3)
+			{
+				int i = 0;
+				for (Direction direction1 : directions)
+					for (Direction direction2 : directions)
+						for (Direction direction3 : directions)
+							all_path_permutations[i++] = { direction1, direction2, direction3 };
+			}
+			else if (move_number == 4)
+			{
+				int i = 0;
+				for (Direction direction1 : directions)
+					for (Direction direction2 : directions)
+						for (Direction direction3 : directions)
+							for (Direction direction4 : directions)
+								all_path_permutations[i++] = { direction1, direction2, direction3, direction4 };
+			}
+			else if (move_number == 5)
+			{
+				int i = 0;
+				for (Direction direction1 : directions)
+					for (Direction direction2 : directions)
+						for (Direction direction3 : directions)
+							for (Direction direction4 : directions)
+								for (Direction direction5 : directions)
+									all_path_permutations[i++] = { direction1, direction2, direction3, direction4, direction5 };
+			}
+			else if (move_number == 6)
+			{
+				int i = 0;
+				for (Direction direction1 : directions)
+					for (Direction direction2 : directions)
+						for (Direction direction3 : directions)
+							for (Direction direction4 : directions)
+								for (Direction direction5 : directions)
+									for (Direction direction6 : directions)
+										all_path_permutations[i++] = { direction1, direction2, direction3, direction4, direction5, direction6 };
+			}
+			else
+			{
+				log::log("Error: move_number invalid");
+				exit(1);
+			}
+
+			return all_path_permutations;
+		}
 
 		pair<Position, double> find_best_action(shared_ptr<Ship> ship, const Game& game) const;
-
-		double score_path(shared_ptr<Ship> ship, const vector<Direction>& path, int reach, int distance_margin, const Game& game) const;
-		pair<Position, double> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const;
-
-		bool valid_move(const Position& position, const Game& game) const;
-		bool allied_priority_ships(const Position& position, const Game& game) const;
-		bool can_stay_still(const Position& position, const Game& game) const;
-		vector<vector<Direction>> get_all_permutations(int move_number) const;
-
-		bool is_stuck_ship(shared_ptr<Ship> ship, const Game& game) const;
-		Direction best_evade_direction(shared_ptr<Ship> ship, const Game& game) const;
+		pair<Position, double> find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const;
+		double score_path(shared_ptr<Ship> ship, const vector<Direction>& path, const Game& game) const;
 	};
 }

@@ -25,8 +25,6 @@ int main(int argc, char* argv[])
 	constants["Score: Remove Halite Multiplier 2p"] = 5;
 	constants["Score: Remove Halite Multiplier 4p"] = 15;
 
-	constants["Score: Attack radius"] = 5;
-
 	constants["Test"] = 0;
 
 	return mybot_internal("GSBot1", constants, rng_seed);

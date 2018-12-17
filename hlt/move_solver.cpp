@@ -9,104 +9,27 @@
 using namespace hlt;
 using namespace std;
 
-
-vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) const
+double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& path, const Game& game) const
 {
-	vector<Direction> directions = { Direction::STILL, Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST };
-
-	vector<vector<Direction>> all_path_permutations((int)pow(5, move_number));
-
-	if (move_number == 2)
-	{
-		int i = 0;
-		for (Direction direction1 : directions)
-			for (Direction direction2 : directions)
-					all_path_permutations[i++] = { direction1, direction2 };
-	}
-	else if (move_number == 3)
-	{
-		int i = 0;
-		for (Direction direction1 : directions)
-			for (Direction direction2 : directions)
-				for (Direction direction3 : directions)
-					all_path_permutations[i++] = { direction1, direction2, direction3 };
-	}
-	else if (move_number == 4)
-	{
-		int i = 0;
-		for (Direction direction1 : directions)
-			for (Direction direction2 : directions)
-				for (Direction direction3 : directions)
-					for (Direction direction4 : directions)
-						all_path_permutations[i++] = { direction1, direction2, direction3, direction4 };
-	}
-	else if (move_number == 5)
-	{
-		int i = 0;
-		for (Direction direction1 : directions)
-			for (Direction direction2 : directions)
-				for (Direction direction3 : directions)
-					for (Direction direction4 : directions)
-						for (Direction direction5 : directions)
-							all_path_permutations[i++] = { direction1, direction2, direction3, direction4, direction5 };
-	}
-	else if (move_number == 6)
-	{
-		int i = 0;
-		for (Direction direction1 : directions)
-			for (Direction direction2 : directions)
-				for (Direction direction3 : directions)
-					for (Direction direction4 : directions)
-						for (Direction direction5 : directions)
-							for (Direction direction6 : directions)
-								all_path_permutations[i++] = { direction1, direction2, direction3, direction4, direction5, direction6 };
-	}
-	else
-	{
-		log::log("Error: move_number invalid");
-		exit(1);
-	}
-
-	return all_path_permutations;
-}
-
-bool MoveSolver::valid_move(const Position& position, const Game& game) const
-{
-	return game.scorer.get_grid_score_move(position) == 0;
-}
-bool MoveSolver::allied_priority_ships(const Position& position, const Game& game) const
-{
-	return game.scorer.get_grid_score_move(position) == 2;
-}
-bool MoveSolver::can_stay_still(const Position& position, const Game& game) const
-{
-	return game.scorer.get_grid_score_can_stay_still(position) > 0.0;
-}
-
-double MoveSolver::score_path(
-	shared_ptr<Ship> ship, 
-	const vector<Direction>& path, 
-	int reach, 
-	int distance_margin, 
-	const Game& game
-) const
-{
+	Position initial_position = ship->position;
 	Position current_position = ship->position;
 	int distance = game.distance_from_objective(ship);
 	int cargo = ship->halite;
-	int burned = 0;
 	int moves = 0;
+	double hard_no = -99999999.0;
+	double soft_no = -9999999.0;
 	double distance_multiplier = game.is_two_player_game() ? 25.0 : 25.0;
 
 	unordered_map<Position, int> visited_positions;
 
 	// Do not stay on spot if more important ship is passing
-	if ((path[0] == Direction::STILL) && allied_priority_ships(current_position, game))
-		return -9999999.0;
+	if ((path[0] == Direction::STILL) && (game.scorer.get_grid_score_move(current_position) == 2)) 
+		return hard_no;
 
-	if ((path[0] == Direction::STILL) && !can_stay_still(current_position, game))
-		return -9999999.0;
-
+	// If can't stay still return hard no as the enemy next to ship will try to kill for sure, the other ones not sure
+	if ((path[0] == Direction::STILL) && (game.scorer.get_grid_score_can_stay_still(current_position) <= 0.0))
+		return hard_no;
+	
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
@@ -118,11 +41,9 @@ double MoveSolver::score_path(
 		// If STILL, get halite
 		if (direction == Direction::STILL)
 		{
-			// Extract halite from cell
 			int d_halite = (int)ceil(0.25 * halite);
 			visited_positions[current_position] -= d_halite;
 
-			// Inspiration bonus
 			if (game.scorer.get_grid_score_inspiration(current_position) >= 2)
 				d_halite *= 3;
 
@@ -133,28 +54,35 @@ double MoveSolver::score_path(
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
 
-			if (!valid_move(current_position, game))
+			// if move next to enemy, return score of doing so
+			if ((game.scorer.get_grid_score_move(current_position) == 9) && (game.distance(initial_position, current_position) == 1))
 			{
-				return -9999999.0;
+				return soft_no - game.scorer.get_score_ship_move_to_position(ship, current_position, game);
+			}
+			// If ally or enemy in other cell, hard no
+			else if (game.scorer.get_grid_score_move(current_position) > 0)
+			{
+				return hard_no;
 			}
 			else
 			{
 				cargo -= halite_to_burn;
-				burned += halite_to_burn;
 				moves++;
 			}
 		}
 		// staying still will be captured anyway
 		else
 		{
-			return -9999999.0;
+			return hard_no;
 		}
 	}
 
 	int final_distance = game.distance(current_position, ship->target_position());
 	int d_distance = final_distance - distance;
+
+	// if close to objective can move freely
 	if ((distance <= 2) && (final_distance <= 2))
-		d_distance = 0; // if close to objective can move freely
+		d_distance = 0;
 
 	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
 
@@ -166,9 +94,8 @@ double MoveSolver::score_path(
 		for (Direction direction : path)
 			line += to_string_direction(direction);
 		line += " " + to_string(max(cargo - (double)ship->halite, 0.0));
-		line += " " + to_string(burned);
 		line += " " + to_string(moves);
-		line += " " + to_string(d_distance * 15.0);
+		line += " " + to_string(d_distance * distance_multiplier);
 		line += " " + to_string(score);
 		log::log(line);
 	}
@@ -176,105 +103,17 @@ double MoveSolver::score_path(
 	return score;
 }
 
-bool is_null_path(const vector<Direction>& path)
-{
-	for (Direction direction : path)
-		if (direction != Direction::STILL)
-			return false;
-
-	return true;
-}
-
-bool MoveSolver::is_stuck_ship(shared_ptr<Ship> ship, const Game& game) const
-{
-	Position north_position = game.game_map->directional_offset(ship->position, Direction::NORTH);
-	Position south_position = game.game_map->directional_offset(ship->position, Direction::SOUTH);
-	Position east_position = game.game_map->directional_offset(ship->position, Direction::EAST);
-	Position west_position = game.game_map->directional_offset(ship->position, Direction::WEST);
-
-	bool enemy_close = (
-		(game.scorer.get_grid_score_move(north_position) == 10) ||
-		(game.scorer.get_grid_score_move(south_position) == 10) ||
-		(game.scorer.get_grid_score_move(east_position) == 10) ||
-		(game.scorer.get_grid_score_move(west_position) == 10)
-	);
-
-	bool unfavorable_combat = game.scorer.get_grid_score_can_stay_still(ship->position) <= 0.0;
-
-	bool enemy_blocks_all_moves = (
-		(game.scorer.get_grid_score_move(north_position) > 0) &&
-		(game.scorer.get_grid_score_move(south_position) > 0) &&
-		(game.scorer.get_grid_score_move(east_position) > 0) &&
-		(game.scorer.get_grid_score_move(west_position) > 0)
-	);
-
-	return enemy_close && unfavorable_combat && enemy_blocks_all_moves;
-}
-
-Direction MoveSolver::best_evade_direction(shared_ptr<Ship> ship, const Game& game) const
-{
-	Position north_position = game.game_map->directional_offset(ship->position, Direction::NORTH);
-	Position south_position = game.game_map->directional_offset(ship->position, Direction::SOUTH);
-	Position east_position = game.game_map->directional_offset(ship->position, Direction::EAST);
-	Position west_position = game.game_map->directional_offset(ship->position, Direction::WEST);
-
-	vector<double> scores;
-	vector<Direction> directions;
-
-	if ((game.scorer.get_grid_score_move(north_position) > 2) && ((game.scorer.get_grid_score_move(north_position) < 10)))
-	{
-		scores.push_back(game.scorer.get_grid_score_win_proba(north_position));
-		directions.push_back(Direction::NORTH);
-	}
-
-	if ((game.scorer.get_grid_score_move(south_position) > 2) && ((game.scorer.get_grid_score_move(south_position) < 10)))
-	{
-		scores.push_back(game.scorer.get_grid_score_win_proba(south_position));
-		directions.push_back(Direction::SOUTH);
-	}
-
-	if ((game.scorer.get_grid_score_move(east_position) > 2) && ((game.scorer.get_grid_score_move(east_position) < 10)))
-	{
-		scores.push_back(game.scorer.get_grid_score_win_proba(east_position));
-		directions.push_back(Direction::EAST);
-	}
-
-	if ((game.scorer.get_grid_score_move(west_position) > 2) && ((game.scorer.get_grid_score_move(west_position) < 10)))
-	{
-		scores.push_back(game.scorer.get_grid_score_win_proba(west_position));
-		directions.push_back(Direction::WEST);
-	}
-
-	if (!scores.size())
-		return Direction::STILL;
-	else
-	{
-		int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
-		return directions[best_score_index];
-	}
-}
-
-pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach, int distance_margin) const
+pair<Position, double> MoveSolver::find_best_extract_move(shared_ptr<Ship> ship, const Game& game, int reach) const
 {
 	vector<double> scores((int)pow(5, reach), 0.0);
 
 	const vector<vector<Direction>>* path_permutations = get_path_permutations(reach);
 	int i = 0;
 	for (const vector<Direction>& path : *path_permutations)
-		scores[i++] = score_path(ship, path, reach, distance_margin, game);
+		scores[i++] = score_path(ship, path, game);
 
 	int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
 	Direction best_direction = game.move_solver.get_best_direction(best_score_index, 0, reach);
-
-	// If move is to stay still, probably we are stuck by enemies, try evade movement
-	if (is_null_path((*path_permutations)[best_score_index]))
-	{
-		if (is_stuck_ship(ship, game))
-		{
-			log::log("Trying evade for " + ship->to_string_ship());
-			best_direction = best_evade_direction(ship, game);
-		}
-	}
 
 	string line = "";
 	for (Direction direction : (*path_permutations)[best_score_index])
@@ -290,12 +129,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 
 	if (ship->is_objective(Objective_Type::MAKE_DROPOFF))
 	{
-		// If not enough halite, extract around base target position
-		if (game.distance(ship->position, ship->target_position()) <= 2)
-			best_move = find_best_extract_move(ship, game, 2, 0);
-		else
-			best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
-
+		best_move = make_pair(ship->target_position(), -game.distance_from_objective(ship));
 		log::log(ship->to_string_ship() + " creating dropoff on " + best_move.first.to_string_position());
 	}
 
@@ -317,7 +151,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 		if (
 			(game.halite_on_position(ship->position) >= 100) &&
 			((int)(1.25 * (1000 - ship->halite)) >= (int)ceil(0.25 * game.halite_on_position(ship->position))) &&
-			(game.is_four_player_game() || !game.enemy_in_adjacent_cell(ship->position)) // 2p games, do not stop if can get rammed
+			!game.enemy_in_adjacent_cell(ship->position)
 			)
 		{
 			best_move = make_pair(ship->position, -game.distance_from_objective(ship));
@@ -341,7 +175,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 	{
 		int reach = (game.me->ships.size() <= 30) ? 6 : 5;
 		
-		best_move = find_best_extract_move(ship, game, reach, 0);
+		best_move = find_best_extract_move(ship, game, reach);
 	}
 	
 	return best_move;

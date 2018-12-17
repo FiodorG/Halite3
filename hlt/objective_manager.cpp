@@ -265,7 +265,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 			{
 				log::log(best_ship->to_string_ship() + " attacking enemy on " + best_objective.target_position.to_string_position() + " with score " + to_string(best_score));
 
-				game.scorer.grid_score_attack_allies_nearby[best_objective.target_position.y][best_objective.target_position.x] *= 0.0;
+				game.ship_on_position(best_objective.target_position)->set_targeted();
 				best_ship->assign_objective(best_objective);
 			}
 			else if (best_objective.type == Objective_Type::EXTRACT_ZONE)
