@@ -85,6 +85,7 @@ namespace hlt
 
 		void update_ship_target_position(shared_ptr<Ship> ship, const Position& position)
 		{
+			// to remove this
 			if (positions_next_turn.count(ship))
 				scorer.flush_grid_score(positions_next_turn[ship]);
 
@@ -110,7 +111,6 @@ namespace hlt
 			if (players.size() == 2)
 			{
 				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
-
 			}
 			else if (players.size() == 4)
 			{
@@ -148,6 +148,9 @@ namespace hlt
 		}
 		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
 		int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
+		bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
+		shared_ptr<Ship> ship_on_position(const Position& position) const { return mapcell(position)->ship; }
+		PlayerId playerid_on_position(const Position& position) const { return mapcell(position)->ship->owner; }
 
 		int get_constant(string name) const { return constants.at(name); }
 		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }

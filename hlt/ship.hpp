@@ -14,11 +14,13 @@ namespace hlt
         Halite halite;
 		shared_ptr<Objective> objective;
 		bool assigned;
+		bool is_targeted;
 
         Ship(PlayerId player_id, EntityId ship_id, int x, int y, Halite halite) :
             Entity(player_id, ship_id, x, y),
             halite(halite),
-			assigned(false)
+			assigned(false),
+			is_targeted(false)
         {}
 
 		void set_assigned() { this->assigned = true; }
@@ -37,6 +39,7 @@ namespace hlt
 		}
 		Objective_Type objective_type() const { return objective->type; }
 		void set_objective_position(const Position& position) { this->objective->target_position = position; }
+		void set_targeted() { this->is_targeted = true; }
 
 		bool is_objective(Objective_Type type) const
 		{
