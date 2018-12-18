@@ -13,6 +13,8 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
+#include <cmath>
+#include <math.h>
 
 using namespace std;
 
@@ -75,7 +77,7 @@ namespace hlt
 				exit(1);
 			}
 		}
-		vector<vector<Direction>> MoveSolver::get_all_permutations(int move_number) const
+		vector<vector<Direction>> get_all_permutations(int move_number) const
 		{
 			vector<Direction> directions = { Direction::STILL, Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST };
 

@@ -132,5 +132,18 @@ namespace hlt
 			else
 				return y_max - ((x - x_min) / (x_max - x_min)) * (y_max - y_min);
 		}
+		static double strangle(double x, double x_min, double x_mid1, double x_mid2, double x_max, double y_min, double y_mid1, double y_mid2, double y_max)
+		{
+			if (x <= x_min)
+				return y_min;
+			else if (x >= x_max)
+				return y_max;
+			else if ((x >= x_min) && (x <= x_mid1))
+				return y_min + ((double)(x - x_min) / (double)(x_mid1 - x_min)) * (y_mid1 - y_min);
+			else if ((x >= x_mid1) && (x <= x_mid2))
+				return y_mid1 + ((double)(x - x_mid1) / (double)(x_mid2 - x_mid1)) * (y_mid2 - y_mid1);
+			else //if ((x <= x_max) && (x >= x_mid2))
+				return y_mid2 - ((double)(x - x_mid2) / (double)(x_max - x_mid2)) * (y_mid2 - y_max);
+		}
 	};
 }
