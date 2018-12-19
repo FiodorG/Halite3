@@ -182,27 +182,26 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			if (game.mapcell(Position(j, i))->has_structure())
 				grid_score_extract_smooth[i][j] = 0.0;
 
-			if (game.is_four_player_game() && (game.game_map->width <= 48))
+			if (game.is_four_player_game() && (game.game_map->width <= 40))
 			{
-				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
-				int base_to_axis = width / 4;
-				int margin = width / 8 - 1;
-				double multiplier = 1.75;
+				int distance_inf_from_center = game.game_map->calculate_distance_from_axis(Position(j, i), Position(width / 2, height / 2));
+				int distance_inf_from_corner = game.game_map->calculate_distance_from_axis(Position(j, i), Position(0, 0));
+				int distance_from_center = game.distance(Position(j, i), Position(width / 2, height / 2));
+				int distance_from_corner = game.distance(Position(j, i), Position(0, 0));
+				int radius = width / 8; // 4 for 32, 5 for 40
+				double multiplier = 1.5;
 
-				grid_score_extract_smooth[i][j] *= strangle(
-					distance_inf_from_shipyard, 
-					base_to_axis - margin, 
-					base_to_axis - margin + 2,
-					base_to_axis + margin - 1,
-					base_to_axis + margin + 1,
-					1.0,
-					multiplier,
-					multiplier,
-					0.5
-				);
+				if (distance_inf_from_center < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_center, 0, radius, 1.0, multiplier);
 
-				if (game.close_to_crowded_area(Position(j, i), margin + 1))
-					grid_score_extract_smooth[i][j] *= multiplier;
+				if (distance_inf_from_corner < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_corner, 0, radius, 1.0, multiplier);
+
+				if (distance_from_center < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_center, 0, radius, 1.0, multiplier);
+
+				if (distance_from_corner < radius)
+					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
 			}
 
 			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
@@ -279,8 +278,6 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 			if (game.is_four_player_game())
 			{
-				double halite_cell = (double)game.mapcell(position)->halite;
-
 				// Find adjacent enemies
 				unordered_map<shared_ptr<Ship>, double> adjacent_enemies;
 				for (int k = 0; k <= 2; ++k)
@@ -296,7 +293,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 				// Fill score for attack from each adjacent enemy
 				for (auto& enemy_ship : adjacent_enemies)
-					adjacent_enemies[enemy_ship.first] = combat_score(game.ship_on_position(position), enemy_ship.first, position, halite_cell, game);
+					adjacent_enemies[enemy_ship.first] = combat_score(game.ship_on_position(position), enemy_ship.first, position, game);
 
 				// fill worst score
 				double worst_score = 99999999.0;
@@ -323,10 +320,11 @@ double Scorer::get_score_ship_move_to_position(shared_ptr<Ship> ship, const Posi
 	return score;
 }
 
-double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, double halite_cell, const Game& game) const
+double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, const Game& game) const
 {
 	double halite_ally = (double)my_ship->halite;
 	double halite_enemy = (double)enemy_ship->halite;
+	double halite_cell = (double)game.mapcell(position_to_score)->halite;
 	double halite_total = (halite_ally + halite_enemy + halite_cell);
 	//int inspiration = grid_score_inspiration[i][j];
 
@@ -357,6 +355,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 	bool is_two_player_game = game.is_two_player_game();
 	int turns_remaining = game.turns_remaining();
 	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
+	bool can_attack = (ship->halite < 500);
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -376,13 +375,13 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 
 			if (
 				is_two_player_game &&
+				can_attack &&
 				(grid_score_move[i][j] == 10) &&
 				!game.ship_on_position(position)->is_targeted
 				)
 			{
-				double halite_cell = (double)game.mapcell(position)->halite;
-				double score_combat = combat_score(ship, game.ship_on_position(position), position, halite_cell, game);
-				double total_score_attack = 10.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
+				double total_score_attack = 5.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
