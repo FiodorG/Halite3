@@ -367,7 +367,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
-			double total_score = halite / (1.0 + (double)total_distance);
+			double total_score = halite / pow(1.0 + (double)total_distance, 0.5);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)
