@@ -462,7 +462,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
 
-	double remove_multiplier = game.is_two_player_game()? 5 : 20;
+	double remove_multiplier = game.is_two_player_game()? 5 : 40;
 
 	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?
