@@ -149,7 +149,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Smoothing radius");
-	double halite_multiplier = game.is_two_player_game()? 2.0 : 3.0;
+	double halite_multiplier = game.is_two_player_game()? 2.0 : 4.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -367,7 +367,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
-			double total_score = halite / sqrt(1.0 + (double)total_distance);
+			double total_score = halite / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)
@@ -462,7 +462,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
 
-	double remove_multiplier = game.is_two_player_game()? (double)game.get_constant("Score: Remove Halite Multiplier 2p") : (double)game.get_constant("Score: Remove Halite Multiplier 4p");
+	double remove_multiplier = game.is_two_player_game()? 5 : 20;
 
 	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?

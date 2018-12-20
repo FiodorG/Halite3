@@ -47,6 +47,9 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			if (game.scorer.get_grid_score_inspiration(current_position) >= 2)
 				d_halite *= 3;
 
+			//if (d_halite < 20)
+			//	d_halite = (int)((double)d_halite * d_halite / 20.0);
+
 			cargo += d_halite;
 		}
 		// Try to move to next cell
