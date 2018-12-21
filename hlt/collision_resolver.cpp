@@ -146,7 +146,6 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 			continue;
 		}
 		// If ship not planning to move, continue
-		//if (ship->position == new_position)
 		if (!game.ship_can_move(ship))
 		{
 			continue;
