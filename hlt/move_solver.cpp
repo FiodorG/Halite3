@@ -57,6 +57,17 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
 
+			// if positive combat expectation of moving to cell, then do so
+			if (
+				(game.scorer.get_grid_score_move(current_position) == 9) &&
+				(game.distance(initial_position, current_position) == 1) &&
+				(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 200.0) &&
+				game.get_constant("Test")
+			)
+			{
+				cargo -= halite_to_burn;
+				moves++;
+			}
 			// if move next to enemy, return score of doing so
 			if ((game.scorer.get_grid_score_move(current_position) == 9) && (game.distance(initial_position, current_position) == 1))
 			{
