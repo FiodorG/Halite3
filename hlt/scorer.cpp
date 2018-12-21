@@ -149,7 +149,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Smoothing radius");
-	double halite_multiplier = game.is_two_player_game()? 2.0 : 4.0;
+	double halite_multiplier = game.is_two_player_game()? 2.0 : 3.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -256,7 +256,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? 0.0 : 0.0;
+	double score_bump = game.is_two_player_game() ? -500.0 : 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -276,7 +276,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 					grid_score_can_stay_still[i][j] = -1.0;
 			}
 
-			if (game.is_four_player_game())
+			if (game.is_two_player_game() || game.is_four_player_game())
 			{
 				// Find adjacent enemies
 				unordered_map<shared_ptr<Ship>, double> adjacent_enemies;
@@ -305,7 +305,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 			}
 		}
 
-	//log::log_vectorvector(grid_score_can_stay_still);
+	log::log_vectorvector(grid_score_can_stay_still);
 }
 
 double Scorer::get_score_ship_move_to_position(shared_ptr<Ship> ship, const Position& position, const Game& game) const
@@ -462,7 +462,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
 
-	double remove_multiplier = game.is_two_player_game()? 5 : 40;
+	double remove_multiplier = game.is_two_player_game()? 5 : 15;
 
 	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?
