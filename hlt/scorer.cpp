@@ -305,7 +305,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 			}
 		}
 
-	log::log_vectorvector(grid_score_can_stay_still);
+	//log::log_vectorvector(grid_score_can_stay_still);
 }
 
 double Scorer::get_score_ship_move_to_position(shared_ptr<Ship> ship, const Position& position, const Game& game) const
@@ -482,4 +482,31 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 
 	//log::log("Grid Score Extract");
 	//log::log_vectorvector(grid_score_extract);
+}
+
+void hlt::Scorer::update_grid_ship_can_move_to_dangerous_cell(const Game& game)
+{
+	grid_ship_can_move_to_dangerous_cell.clear();
+
+	for (const shared_ptr<Ship>& my_ship : game.me->my_ships)
+	{
+		grid_ship_can_move_to_dangerous_cell[my_ship] = unordered_map<Position, double>();
+
+		vector<Position> dangerous_positions = game.adjacent_positions_to_position(my_ship->position);
+
+		for (auto& dangerous_position : dangerous_positions)
+		{
+			vector<shared_ptr<Ship>> enemies = game.enemies_adjacent_to_position(dangerous_position);
+
+			double score = 9999999.0;
+			for (auto& enemy_ship : enemies)
+				score = min(score, combat_score(my_ship, enemy_ship, dangerous_position, game));
+
+			grid_ship_can_move_to_dangerous_cell[my_ship][dangerous_position] = score;
+		}
+	}
+
+	for (auto& ship_it : grid_ship_can_move_to_dangerous_cell)
+		for (auto& position_it : ship_it.second)
+			log::log(ship_it.first->to_string_ship() + " move to " + position_it.first.to_string_position() + " with score " + to_string(position_it.second));
 }

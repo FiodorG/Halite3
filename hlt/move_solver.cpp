@@ -30,6 +30,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	if ((path[0] == Direction::STILL) && (game.scorer.get_grid_score_can_stay_still(current_position) <= 0.0))
 		return hard_no;
 	
+	bool check = false;
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
@@ -47,8 +48,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			if (game.scorer.get_grid_score_inspiration(current_position) >= 2)
 				d_halite *= 3;
 
-			//if (d_halite < 20)
-			//	d_halite = (int)((double)d_halite * d_halite / 20.0);
+			/*if (d_halite <= 10)
+				d_halite = d_halite <= 5? 1 : 5;*/
 
 			cargo += d_halite;
 		}
@@ -57,6 +58,18 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
 
+			// if positive combat expectation of moving to cell, then do so
+			if (
+				(game.scorer.get_grid_score_move(current_position) == 9) &&
+				(game.distance(initial_position, current_position) == 1) &&
+				(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 200.0) &&
+				game.get_constant("Test")
+			)
+			{
+				check = true;
+				cargo -= halite_to_burn;
+				moves++;
+			}
 			// if move next to enemy, return score of doing so
 			if ((game.scorer.get_grid_score_move(current_position) == 9) && (game.distance(initial_position, current_position) == 1))
 			{
@@ -91,6 +104,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 
 	if (false)
 	{
+		log::log("here");
 		string line;
 		line += current_position.to_string_position();
 		line += " ";
@@ -102,6 +116,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		line += " " + to_string(score);
 		log::log(line);
 	}
+
+	//if (game.turn_number == 200) exit(1);
 	
 	return score;
 }
