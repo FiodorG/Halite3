@@ -25,6 +25,7 @@ namespace hlt
 		vector<vector<int>> grid_score_inspiration;
 
 		unordered_map<PlayerId, vector<vector<double>>> grid_score_ships_nearby;
+		unordered_map<shared_ptr<Ship>, unordered_map<Position, double>> grid_ship_can_move_to_dangerous_cell;
 
 		vector<vector<double>> grid_score_can_stay_still;
 		vector<vector<int>> grid_score_allies_around;
@@ -59,6 +60,7 @@ namespace hlt
 			update_grid_score_dropoff(game); // depend on grid_score_move
 			update_grid_score_targets(game); // no dep
 			update_grid_score_can_stay_still(game); // depend on grid_score_move, grid_score_targets
+			update_grid_ship_can_move_to_dangerous_cell(game); // depend on grid_score_move, grid_score_targets
 		}
 
 		// Move scorer
@@ -92,6 +94,11 @@ namespace hlt
 		void update_grid_score_can_stay_still(const Game& game);
 		double get_grid_score_can_stay_still(const Position& position) const { return grid_score_can_stay_still[position.y][position.x]; }
 		double get_score_ship_move_to_position(shared_ptr<Ship> ship, const Position& position, const Game& game) const;
+		void update_grid_ship_can_move_to_dangerous_cell(const Game& game);
+		double get_score_ship_can_move_to_dangerous_cell(shared_ptr<Ship> ship, const Position& position) const 
+		{ 
+			return grid_ship_can_move_to_dangerous_cell.at(ship).at(position);
+		}
 
 		// utilities
 		static double linear_increase(int x, int x_min, int x_max, double y_min, double y_max)

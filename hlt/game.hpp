@@ -151,6 +151,35 @@ namespace hlt
 		bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
 		shared_ptr<Ship> ship_on_position(const Position& position) const { return mapcell(position)->ship; }
 		PlayerId playerid_on_position(const Position& position) const { return mapcell(position)->ship->owner; }
+		vector<shared_ptr<Ship>> enemies_adjacent_to_position(const Position& position) const
+		{
+			vector<shared_ptr<Ship>> enemies;
+
+			if (game_map->at(game_map->directional_offset(position, Direction::NORTH))->is_occupied_by_enemy(my_id))
+				enemies.push_back(ship_on_position(game_map->directional_offset(position, Direction::NORTH)));
+
+			if (game_map->at(game_map->directional_offset(position, Direction::SOUTH))->is_occupied_by_enemy(my_id))
+				enemies.push_back(ship_on_position(game_map->directional_offset(position, Direction::SOUTH)));
+
+			if (game_map->at(game_map->directional_offset(position, Direction::EAST))->is_occupied_by_enemy(my_id))
+				enemies.push_back(ship_on_position(game_map->directional_offset(position, Direction::EAST)));
+
+			if (game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id))
+				enemies.push_back(ship_on_position(game_map->directional_offset(position, Direction::WEST)));
+
+			return enemies;
+		}
+		vector<Position> adjacent_positions_to_position(const Position& position) const
+		{
+			vector<Position> positions;
+
+			positions.push_back(game_map->directional_offset(position, Direction::NORTH));
+			positions.push_back(game_map->directional_offset(position, Direction::SOUTH));
+			positions.push_back(game_map->directional_offset(position, Direction::EAST));
+			positions.push_back(game_map->directional_offset(position, Direction::WEST));
+
+			return positions;
+		}
 
 		int get_constant(string name) const { return constants.at(name); }
 		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
