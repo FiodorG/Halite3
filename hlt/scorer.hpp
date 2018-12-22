@@ -4,6 +4,7 @@
 #include "shipyard.hpp"
 #include "map_cell.hpp"
 #include "position.hpp"
+#include "stopwatch.hpp"
 
 #include <vector>
 #include <utility>
@@ -52,7 +53,7 @@ namespace hlt
 		
 		void update_grids(const Game& game)
 		{
-			log::log("Updating grids");
+			Stopwatch s("Updating grids");
 			update_grid_score_move(game); // no dep
 			update_grid_score_enemies(game); // no dep
 			update_grid_score_inspiration(game); // no dep

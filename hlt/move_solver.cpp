@@ -19,6 +19,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
 	double distance_multiplier = game.is_two_player_game() ? 25.0 : 25.0;
+	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 
 	unordered_map<Position, int> visited_positions;
 
@@ -30,7 +31,6 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	if ((path[0] == Direction::STILL) && (game.scorer.get_grid_score_can_stay_still(current_position) <= 0.0))
 		return hard_no;
 	
-	bool check = false;
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
@@ -57,27 +57,22 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		else if (cargo >= halite_to_burn)
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
+			int score_move = game.scorer.get_grid_score_move(current_position);
+			int current_distance = game.distance(initial_position, current_position);
 
 			// if positive combat expectation of moving to cell, then do so
-			//if (
-			//	(game.scorer.get_grid_score_move(current_position) == 9) &&
-			//	(game.distance(initial_position, current_position) == 1) &&
-			//	(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 200.0) &&
-			//	game.get_constant("Test")
-			//)
-			//{
-			//	check = true;
-			//	cargo -= halite_to_burn;
-			//	moves++;
-			//}
+			if ((score_move == 9) && (current_distance <= 3) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 200.0))
+			{
+				cargo -= halite_to_burn;
+				moves++;
+			}
 			// if move next to enemy, return score of doing so
-			// else
-			if ((game.scorer.get_grid_score_move(current_position) == 9) && (game.distance(initial_position, current_position) == 1))
+			else if ((score_move == 9) && (current_distance == 1))
 			{
 				return soft_no - game.scorer.get_score_ship_move_to_position(ship, current_position, game);
 			}
 			// If ally or enemy in other cell, hard no
-			else if (game.scorer.get_grid_score_move(current_position) > 0)
+			else if (score_move > 0)
 			{
 				return hard_no;
 			}
@@ -98,14 +93,13 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int d_distance = final_distance - distance;
 
 	// if close to objective can move freely
-	if ((distance <= 3) && (final_distance <= 3))
+	if ((distance <= distance_no_penalty) && (final_distance <= distance_no_penalty))
 		d_distance = 0;
 
 	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
 
-	if (check)
+	if (false)
 	{
-		log::log("here");
 		string line;
 		line += current_position.to_string_position();
 		line += " ";

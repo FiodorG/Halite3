@@ -6,6 +6,8 @@ using namespace std;
 
 void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 {
+	Stopwatch s("Updating grid_score_inspiration");
+
 	for (int i = 0; i < game.game_map->height; ++i)
 		for (int j = 0; j < game.game_map->width; ++j)
 			grid_score_inspiration[i][j] = 0;
@@ -33,6 +35,8 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 }
 void hlt::Scorer::update_grid_score_move(const Game& game)
 {
+	Stopwatch s("Updating grid_score_move");
+
 	for (int i = 0; i < game.game_map->height; ++i)
 		for (int j = 0; j < game.game_map->width; ++j)
 		{
@@ -58,6 +62,8 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 }
 void hlt::Scorer::update_grid_score_enemies(const Game& game)
 {
+	Stopwatch s("Updating grid_score_enemies");
+
 	for (int i = 0; i < game.game_map->height; ++i)
 		for (int j = 0; j < game.game_map->width; ++j)
 		{
@@ -102,17 +108,17 @@ void hlt::Scorer::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Posi
 
 void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 {
+	Stopwatch s("Updating grid_score_dropoff");
+
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = 7;
-	double enemies_around = 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 		{
 			// Initialize to 0
 			grid_score_dropoff[i][j] = 0.0;
-			enemies_around = 0.0;
 
 			// Halite around adds to score
 			for (int k = 0; k <= radius * 2; ++k)
@@ -126,7 +132,6 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 					if (distance <= radius)
 					{
 						grid_score_dropoff[i][j] += halite;
-						enemies_around += (double)(grid_score_move[new_k][new_l] == 10) / max(1.0, (double)distance);
 					}
 				}
 
@@ -146,6 +151,8 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 }
 void hlt::Scorer::update_grid_score_extract(const Game& game)
 {
+	Stopwatch s("Updating grid_score_extract");
+
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Smoothing radius");
@@ -212,6 +219,8 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 }
 void hlt::Scorer::update_grid_score_targets(const Game& game)
 {
+	Stopwatch s("Updating grid_score_targets");
+
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = 5;
@@ -254,6 +263,8 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 }
 void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 {
+	Stopwatch s("Updating grid_score_can_stay_still");
+
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	double score_bump = game.is_two_player_game() ? -500.0 : 0.0;
@@ -486,13 +497,15 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 
 void hlt::Scorer::update_grid_ship_can_move_to_dangerous_cell(const Game& game)
 {
+	Stopwatch s("Updating grid_ship_can_move_to_dangerous_cell");
+
 	grid_ship_can_move_to_dangerous_cell.clear();
 
 	for (const shared_ptr<Ship>& my_ship : game.me->my_ships)
 	{
 		grid_ship_can_move_to_dangerous_cell[my_ship] = unordered_map<Position, double>();
 
-		vector<Position> dangerous_positions = game.adjacent_positions_to_position(my_ship->position);
+		vector<Position> dangerous_positions = game.nearby_positions_to_position(my_ship->position, 3);
 
 		for (auto& dangerous_position : dangerous_positions)
 		{
@@ -506,7 +519,8 @@ void hlt::Scorer::update_grid_ship_can_move_to_dangerous_cell(const Game& game)
 		}
 	}
 
-	for (auto& ship_it : grid_ship_can_move_to_dangerous_cell)
-		for (auto& position_it : ship_it.second)
-			log::log(ship_it.first->to_string_ship() + " move to " + position_it.first.to_string_position() + " with score " + to_string(position_it.second));
+	//for (auto& ship_it : grid_ship_can_move_to_dangerous_cell)
+	//	for (auto& position_it : ship_it.second)
+	//		//if (position_it.second != 9999999.0)
+	//			log::log(ship_it.first->to_string_ship() + " move to " + position_it.first.to_string_position() + " with score " + to_string(position_it.second));
 }
