@@ -189,7 +189,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			if (game.mapcell(Position(j, i))->has_structure())
 				grid_score_extract_smooth[i][j] = 0.0;
 
-			if (game.is_four_player_game() && (game.game_map->width <= 40))
+			if (false && game.is_four_player_game() && (game.game_map->width <= 40))
 			{
 				int distance_inf_from_center = game.game_map->calculate_distance_from_axis(Position(j, i), Position(width / 2, height / 2));
 				int distance_inf_from_corner = game.game_map->calculate_distance_from_axis(Position(j, i), Position(0, 0));
@@ -209,6 +209,29 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 
 				if (distance_from_corner < radius)
 					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
+			}
+
+			if (game.is_four_player_game() && (game.game_map->width <= 40))
+			{
+				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
+				int base_to_axis = width / 4;
+				int margin = width / 8 - 1;
+				double multiplier = 1.5;
+
+				grid_score_extract_smooth[i][j] *= strangle(
+					distance_inf_from_shipyard,
+					base_to_axis - margin,
+					base_to_axis - margin + 2,
+					base_to_axis + margin - 2,
+					base_to_axis + margin,
+					1.0,
+					multiplier,
+					multiplier,
+					0.8
+				);
+
+				if (game.close_to_crowded_area(Position(j, i), margin + 1))
+					grid_score_extract_smooth[i][j] *= multiplier;
 			}
 
 			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
