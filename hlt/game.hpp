@@ -167,6 +167,9 @@ namespace hlt
 			if (game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id))
 				enemies.push_back(ship_on_position(game_map->directional_offset(position, Direction::WEST)));
 
+			if (game_map->at(position)->is_occupied_by_enemy(my_id))
+				enemies.push_back(ship_on_position(position));
+
 			return enemies;
 		}
 		vector<Position> adjacent_positions_to_position(const Position& position) const
@@ -177,6 +180,29 @@ namespace hlt
 			positions.push_back(game_map->directional_offset(position, Direction::SOUTH));
 			positions.push_back(game_map->directional_offset(position, Direction::EAST));
 			positions.push_back(game_map->directional_offset(position, Direction::WEST));
+
+			return positions;
+		}
+		vector<Position> nearby_positions_to_position(const Position& position, int d) const
+		{
+			vector<Position> positions;
+
+			int width = game_map->width;
+			int height = game_map->height;
+
+			int target_x = position.x;
+			int target_y = position.y;
+
+			for (int i = 0; i <= d * 2; ++i)
+				for (int j = 0; j <= d * 2; ++j)
+				{
+					int new_x = (((target_x - d + i) % width) + width) % width;
+					int new_y = (((target_y - d + j) % height) + height) % height;
+					Position new_position = Position(new_x, new_y);
+
+					if (distance(position, new_position) <= d)
+						positions.push_back(new_position);
+				}
 
 			return positions;
 		}
