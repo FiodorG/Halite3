@@ -528,7 +528,7 @@ void hlt::Scorer::update_grid_ship_can_move_to_dangerous_cell(const Game& game)
 	{
 		grid_ship_can_move_to_dangerous_cell[my_ship] = unordered_map<Position, double>();
 
-		vector<Position> dangerous_positions = game.nearby_positions_to_position(my_ship->position, 4);
+		vector<Position> dangerous_positions = game.nearby_positions_to_position(my_ship->position, 3);
 
 		for (auto& dangerous_position : dangerous_positions)
 		{
