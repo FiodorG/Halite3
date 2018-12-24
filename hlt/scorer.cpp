@@ -227,7 +227,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					1.0,
 					multiplier,
 					multiplier,
-					0.8
+					0.9
 				);
 
 				if (game.close_to_crowded_area(Position(j, i), margin + 1))
