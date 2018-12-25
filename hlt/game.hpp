@@ -96,15 +96,31 @@ namespace hlt
 
 		void generate_new_ships()
 		{
-			if (
-				turns_remaining_percent() >= 0.33 &&
-				me->halite - reserved_halite >= constants::SHIP_COST &&
-				!position_occupied_next_turn(my_shipyard_position()) &&
-				my_ships_number() <= max_allowed_ships()
-				)
+			if (players.size() == 2)
 			{
-				command_queue.push_back(me->shipyard->spawn());
-				total_ships_produced++;
+				if (
+					turns_remaining_percent() >= 0.33 &&
+					me->halite - reserved_halite >= constants::SHIP_COST &&
+					!position_occupied_next_turn(my_shipyard_position()) &&
+					my_ships_number() <= max_allowed_ships()
+					)
+				{
+					command_queue.push_back(me->shipyard->spawn());
+					total_ships_produced++;
+				}
+			}
+			else
+			{
+				if (
+					turns_remaining_percent() >= 0.33 &&
+					me->halite - reserved_halite >= constants::SHIP_COST &&
+					!position_occupied_next_turn(my_shipyard_position()) &&
+					total_ships_produced <= max_allowed_ships()
+					)
+				{
+					command_queue.push_back(me->shipyard->spawn());
+					total_ships_produced++;
+				}
 			}
 		}
 
