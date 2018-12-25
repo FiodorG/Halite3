@@ -44,14 +44,10 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 
 			// If enemy with non lots of halite is in contiguous cell, 9
 			if (
-				(game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::NORTH)) && 
-				(game.ship_on_position(game.game_map->directional_offset(Position(j, i), Direction::NORTH))->halite <= 900)) ||
-				(game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::SOUTH)) && 
-				(game.ship_on_position(game.game_map->directional_offset(Position(j, i), Direction::SOUTH))->halite <= 900)) ||
-				(game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::EAST)) && 
-				(game.ship_on_position(game.game_map->directional_offset(Position(j, i), Direction::EAST))->halite <= 900)) ||
-				(game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::WEST)) && 
-				(game.ship_on_position(game.game_map->directional_offset(Position(j, i), Direction::WEST))->halite <= 900))
+				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::NORTH)) ||
+				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::SOUTH)) ||
+				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::EAST)) ||
+				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::WEST))
 			)
 				grid_score_move[i][j] = 9;
 
