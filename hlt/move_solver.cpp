@@ -21,7 +21,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	double distance_multiplier = game.is_two_player_game() ? 25.0 : 25.0;
 	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 	int distance_move_dangerous_cell = 3;
-	double score_can_move = game.is_two_player_game() 200.0 : 500.0;
+	double score_can_move = game.is_two_player_game() ? 200.0 : 200.0;
 
 	unordered_map<Position, int> visited_positions;
 

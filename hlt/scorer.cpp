@@ -211,7 +211,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
 			}
 
-			if (game.is_four_player_game() && (game.game_map->width <= 40))
+			if (false && game.is_four_player_game() && (game.game_map->width <= 40))
 			{
 				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
 				int base_to_axis = width / 4;
@@ -327,7 +327,13 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 				// Fill score for attack from each adjacent enemy
 				for (auto& enemy_ship : adjacent_enemies)
-					adjacent_enemies[enemy_ship.first] = combat_score(game.ship_on_position(position), enemy_ship.first, position, game);
+				{
+					// can always stay next to high h ships
+					if (enemy_ship.first->halite <= 700)
+						adjacent_enemies[enemy_ship.first] = combat_score(game.ship_on_position(position), enemy_ship.first, position, game);
+					else
+						adjacent_enemies[enemy_ship.first] = 9999999.0;
+				}
 
 				// fill worst score
 				double worst_score = 99999999.0;
