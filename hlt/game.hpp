@@ -36,6 +36,7 @@ namespace hlt
 		unordered_map<string, int> constants;
 		int reserved_halite;
 		int number_of_players;
+		int total_ships_produced;
 
 		// For timer
 		clock_t start;
@@ -101,7 +102,10 @@ namespace hlt
 				!position_occupied_next_turn(my_shipyard_position()) &&
 				my_ships_number() <= max_allowed_ships()
 				)
+			{
 				command_queue.push_back(me->shipyard->spawn());
+				total_ships_produced++;
+			}
 		}
 
 		int max_allowed_ships() const

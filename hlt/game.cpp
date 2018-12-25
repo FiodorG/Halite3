@@ -30,6 +30,7 @@ hlt::Game::Game(unordered_map<string, int> constants) :
 
 	// My stuff
 	number_of_players = players.size();
+	total_ships_produced = 0;
 	reserved_halite = 0;
 	collision_resolver = CollisionResolver();
 	scorer = Scorer(game_map->width, game_map->height);
