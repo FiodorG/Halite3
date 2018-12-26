@@ -35,7 +35,6 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_coll
 			ship_move.first->is_objective(Objective_Type::ATTACK) 
 		 || ship_move.first->is_objective(Objective_Type::BLOCK_ENEMY_BASE)
 		 || ship_move.first->is_objective(Objective_Type::SUICIDE_ON_BASE)
-		 || ship_move.first->is_objective(Objective_Type::EXTRACT_ZONE)
 		)
 			continue;
 
