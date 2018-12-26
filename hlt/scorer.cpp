@@ -329,7 +329,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 				for (auto& enemy_ship : adjacent_enemies)
 				{
 					// can always stay next to high h ships
-					if (enemy_ship.first->halite <= 700)
+					if (enemy_ship.first->halite <= 900)
 						adjacent_enemies[enemy_ship.first] = combat_score(game.ship_on_position(position), enemy_ship.first, position, game);
 					else
 						adjacent_enemies[enemy_ship.first] = 9999999.0;
