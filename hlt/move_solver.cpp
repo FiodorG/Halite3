@@ -22,7 +22,6 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 	int distance_move_dangerous_cell = 3;
 	double score_can_move = game.is_two_player_game() ? 200.0 : 200.0;
-	bool is_four_player_game = game.is_four_player_game();
 
 	unordered_map<Position, int> visited_positions;
 
@@ -54,7 +53,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			/*if (d_halite <= 10)
 				d_halite = d_halite <= 5? 1 : 5;*/
 
-			cargo += d_halite;
+			cargo += d_halite; 
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
@@ -63,13 +62,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
-			// if very worthy to kill ship, try
-			if (is_four_player_game && (score_move == 10) && (current_distance <= 1) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 1000.0))
-			{
-				return game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position);
-			}
 			// if positive combat expectation of moving to cell, then do so
-			else 
 			if ((score_move == 9) && (current_distance <= distance_move_dangerous_cell) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
 			{
 				cargo -= halite_to_burn;

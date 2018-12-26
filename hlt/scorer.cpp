@@ -396,6 +396,8 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 	int turns_remaining = game.turns_remaining();
 	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
 	bool can_attack = (ship->halite < 500);
+	bool can_four_player_game_attack = game.is_four_player_game() && height <= 56;
+	double attack_bonus = game.is_two_player_game() ? 5.0 : 2.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -414,14 +416,14 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				total_score -= 999999.0;
 
 			if (
-				is_two_player_game &&
+				(is_two_player_game || can_four_player_game_attack) &&
 				can_attack &&
 				(grid_score_move[i][j] == 10) &&
 				!game.ship_on_position(position)->is_targeted
 				)
 			{
 				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-				double total_score_attack = 5.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double total_score_attack = attack_bonus * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
