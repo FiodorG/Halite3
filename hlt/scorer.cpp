@@ -211,7 +211,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
 			}
 
-			if (false && game.is_four_player_game() && (game.game_map->width <= 40))
+			if (game.is_four_player_game() && (game.game_map->width <= 40))
 			{
 				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
 				int base_to_axis = width / 4;
