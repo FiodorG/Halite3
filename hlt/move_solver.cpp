@@ -67,8 +67,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			{
 				cargo -= halite_to_burn;
 
-				if (halite_to_burn > 5)
-					moves++;
+				moves++;
 			}
 			// if move next to enemy, return score of doing so
 			else if ((score_move == 9) && (current_distance == 1))
@@ -84,8 +83,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			{
 				cargo -= halite_to_burn;
 
-				if (halite_to_burn > 5)
-					moves++;
+				moves++;
 			}
 		}
 		// staying still will be captured anyway
