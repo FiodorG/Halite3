@@ -18,7 +18,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int moves = 0;
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
-	double distance_multiplier = game.is_two_player_game() ? 25.0 : 25.0;
+	double distance_multiplier = game.is_two_player_game() ? 25.0 : (game.game_map->height <= 48 ? 35.0 : 25.0);
 	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 	int distance_move_dangerous_cell = 3;
 	double score_can_move = game.is_two_player_game() ? 200.0 : 200.0;
@@ -66,9 +66,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			if ((score_move == 9) && (current_distance <= distance_move_dangerous_cell) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
 			{
 				cargo -= halite_to_burn;
-
-				if (halite_to_burn > 5)
-					moves++;
+				moves++;
 			}
 			// if move next to enemy, return score of doing so
 			else if ((score_move == 9) && (current_distance == 1))
@@ -83,9 +81,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			else
 			{
 				cargo -= halite_to_burn;
-
-				if (halite_to_burn > 5)
-					moves++;
+				moves++;
 			}
 		}
 		// staying still will be captured anyway
