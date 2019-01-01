@@ -108,9 +108,9 @@ bool CollisionResolver::is_ship_switching_places(shared_ptr<Ship> ship, Game& ga
 	// Check that ship's starting point is ending point of someone else
 	for (auto& ship_position : game.positions_next_turn)
 		if (
-			(ship_position.first != ship) && 
-			(ship_position.second == ship->position) && 
-			(game.positions_next_turn[ship] == ship_position.second)
+			(ship_position.first != ship) && // different ship
+			(ship_position.second == ship->position) && // someone wants to go where ship is
+			(game.positions_next_turn[ship] == ship_position.second) // ships wants to go there too
 		)
 			return true;
 
@@ -135,7 +135,6 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 	for (auto& ship : collisions_ordered)
 		log::log(ship->to_string_ship() + " moving to " + collisions[ship].to_string_position());
 
-	// We try to edit the first ship that comes up, no order.
 	for (auto& ship : collisions_ordered)
 	{
 		Position new_position = collisions[ship];
@@ -143,39 +142,43 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		// If not own ship, continue
 		if (ship->owner != game.my_id)
 		{
+			log::log(ship->to_string_ship() + " not mine, continue");
 			continue;
 		}
 		// If ship not planning to move, continue
 		if (!game.ship_can_move(ship))
 		{
+			log::log(ship->to_string_ship() + " cannot move, continue");
 			continue;
 		}
 		// If ship on suicide mission, do not change it
 		if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && game.is_shipyard_or_dropoff(new_position))
 		{
+			log::log(ship->to_string_ship() + " is suiciding, continue");
 			continue;
 		}
 		// If ship exchanges places with another, do not edit it
 		if (is_ship_switching_places(ship, game))
 		{
+			log::log(ship->to_string_ship() + " is switching places, continue");
 			continue;
 		}
 		// Recompute new path otherwise
 		else
 		{
-			log::log("Trying to fudge " + ship->to_string_ship());
-			Position position_next_turn_old = game.positions_next_turn[ship];
-			Position new_position = game.pathfinder.compute_shortest_path(ship->position, ship->target_position(), game);
-			if (
-				position_collides_with_existing(ship, new_position, game) ||
-				(position_next_turn_old == new_position)
-			)
-			{
+			//log::log("Trying to fudge " + ship->to_string_ship());
+			//Position position_next_turn_old = game.positions_next_turn[ship];
+			//Position new_position = game.pathfinder.compute_shortest_path(ship->position, ship->target_position(), game);
+			//if (
+			//	position_collides_with_existing(ship, new_position, game) ||
+			//	(position_next_turn_old == new_position)
+			//)
+			//{
 				game.update_ship_target_position(ship, ship->position);
 				log::log("No resolving, stop " + ship->to_string_ship());
-			}
-			else
-				game.update_ship_target_position(ship, new_position);
+			//}
+			//else
+			//	game.update_ship_target_position(ship, new_position);
 
 			return;
 		}
@@ -317,18 +320,18 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 				break;
 		}
 
-		// While enemy collisions exist, edit ships one by one
-		unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
-		int j = 0;
-		while (enemy_collisions.size())
-		{
-			edit_collisions(enemy_collisions, game);
-			enemy_collisions = find_any_enemy_collisions(game);
-			j++;
+		//// While enemy collisions exist, edit ships one by one
+		//unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
+		//int j = 0;
+		//while (enemy_collisions.size())
+		//{
+		//	edit_collisions(enemy_collisions, game);
+		//	enemy_collisions = find_any_enemy_collisions(game);
+		//	j++;
 
-			if (j == 50)
-				break;
-		}
+		//	if (j == 50)
+		//		break;
+		//}
 	}
 	
 	exchange_ships(game);

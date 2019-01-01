@@ -99,7 +99,7 @@ unordered_map<Position, double> Blocker::position_to_block_on_enemy_base(const P
 			int halite_enemy = 0;
 			int halite_ally = 0;
 
-			if (game.enemy_in_cell(position))
+			if (game.enemy_in_cell(position) && (game.ship_on_position(position)->owner == game.mapcell(enemy_base)->structure->owner))
 				halite_enemy += game.mapcell(position)->ship->halite;
 
 			if (game.ally_in_cell(position))
