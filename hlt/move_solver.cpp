@@ -22,6 +22,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 	int distance_move_dangerous_cell = 3;
 	double score_can_move = game.is_two_player_game() ? 200.0 : 200.0;
+	bool can_attack = game.get_constant("Test") && game.is_four_player_game() && game.turns_remaining_percent() < 0.33;
+	double score = 0.0;
 
 	unordered_map<Position, int> visited_positions;
 
@@ -33,6 +35,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	if ((path[0] == Direction::STILL) && (game.scorer.get_grid_score_can_stay_still(current_position) <= 0.0))
 		return hard_no;
 	
+	bool print = false;
+	int turn = 0;
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
@@ -62,6 +66,13 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
+			if (can_attack && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
+			{
+				print = true;
+				score = game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) * pow(0.9, turn) / (1.0 + (double)moves);
+				goto finish;
+			}
+			else
 			// if positive combat expectation of moving to cell, then do so
 			if ((score_move == 9) && (current_distance <= distance_move_dangerous_cell) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
 			{
@@ -89,6 +100,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		{
 			return hard_no;
 		}
+
+		turn++;
 	}
 
 	int final_distance = game.distance(current_position, ship->target_position());
@@ -98,9 +111,10 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	if ((distance <= distance_no_penalty) && (final_distance <= distance_no_penalty))
 		d_distance = 0;
 
-	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
+	score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
 
-	if (false)
+	finish:
+	if (print)
 	{
 		string line;
 		line += current_position.to_string_position();
