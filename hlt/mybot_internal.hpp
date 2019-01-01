@@ -35,8 +35,7 @@ namespace hlt
 				}
 			}
 
-			//if (game.turn_number == 100)
-			//	exit(1);
+			//if (game.turn_number == 100) exit(1);
 
 			game.fudge_ship_if_base_blocked();
 			game.resolve_moves();
