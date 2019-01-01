@@ -157,6 +157,7 @@ namespace hlt
 		MapCell* mapcell(int x, int y) const { return game_map->at(y, x); }
 		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
 		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
+		bool enemy_dropoff_in_cell(const Position& position) const { return game_map->at(position)->has_structure() && (game_map->at(position)->structure->owner != my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
 		{
 			return

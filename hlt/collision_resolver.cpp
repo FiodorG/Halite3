@@ -317,18 +317,18 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 				break;
 		}
 
-		// While enemy collisions exist, edit ships one by one
-		unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
-		int j = 0;
-		while (enemy_collisions.size())
-		{
-			edit_collisions(enemy_collisions, game);
-			enemy_collisions = find_any_enemy_collisions(game);
-			j++;
+		//// While enemy collisions exist, edit ships one by one
+		//unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
+		//int j = 0;
+		//while (enemy_collisions.size())
+		//{
+		//	edit_collisions(enemy_collisions, game);
+		//	enemy_collisions = find_any_enemy_collisions(game);
+		//	j++;
 
-			if (j == 50)
-				break;
-		}
+		//	if (j == 50)
+		//		break;
+		//}
 	}
 	
 	exchange_ships(game);

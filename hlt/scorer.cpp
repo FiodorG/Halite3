@@ -189,28 +189,6 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			if (game.mapcell(Position(j, i))->has_structure())
 				grid_score_extract_smooth[i][j] = 0.0;
 
-			if (false && game.is_four_player_game() && (game.game_map->width <= 40))
-			{
-				int distance_inf_from_center = game.game_map->calculate_distance_from_axis(Position(j, i), Position(width / 2, height / 2));
-				int distance_inf_from_corner = game.game_map->calculate_distance_from_axis(Position(j, i), Position(0, 0));
-				int distance_from_center = game.distance(Position(j, i), Position(width / 2, height / 2));
-				int distance_from_corner = game.distance(Position(j, i), Position(0, 0));
-				int radius = width / 8; // 4 for 32, 5 for 40
-				double multiplier = 1.5;
-
-				if (distance_inf_from_center < radius)
-					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_center, 0, radius, 1.0, multiplier);
-
-				if (distance_inf_from_corner < radius)
-					grid_score_extract_smooth[i][j] *= linear_decrease(distance_inf_from_corner, 0, radius, 1.0, multiplier);
-
-				if (distance_from_center < radius)
-					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_center, 0, radius, 1.0, multiplier);
-
-				if (distance_from_corner < radius)
-					grid_score_extract_smooth[i][j] *= linear_decrease(distance_from_corner, 0, radius, 1.0, multiplier);
-			}
-
 			if (game.is_four_player_game() && (game.game_map->width <= 40))
 			{
 				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
@@ -376,6 +354,10 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 		proba_of_me_getting_back = score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby);
 	else
 		proba_of_me_getting_back = 0.0; // don't attack if unclear if can get back
+
+	// do not attack on enemy dropoffs
+	if (game.enemy_dropoff_in_cell(position_to_score))
+		proba_of_me_getting_back = 0.0;
 
 	double score_ally = -halite_ally + halite_total * proba_of_me_getting_back;
 	double score_enemy = -halite_enemy + halite_total * (1.0 - proba_of_me_getting_back);
