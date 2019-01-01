@@ -232,6 +232,10 @@ int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* curre
 	if (distance <= 4)
 		move_score += (game.scorer.get_grid_score_move(next_cell->position) > 2) * 100.0 * (4.0 - (double)distance) / 4.0;
 
+	// do not go straight on enemy cell
+	if (distance <= 1)
+		move_score += (game.scorer.get_grid_score_move(next_cell->position) == 10) * 9999999.0;
+
 	return move_score;
 }
 

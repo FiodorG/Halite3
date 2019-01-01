@@ -156,7 +156,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 				!ship->assigned &&
 				(
 					// if previously assigned to blockade
-					ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE) || 
+					(ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE) && (ship->halite < 400)) ||
 					// capture ships to blockade
 					((ship->halite < 40) && (2 * game.distance(ship->position, game.get_closest_enemy_shipyard_or_dropoff(ship)) >= game.turns_remaining())) ||
 					// convert ships to blockade from suicide if low halite
