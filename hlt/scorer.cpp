@@ -71,24 +71,28 @@ void hlt::Scorer::update_grid_score_enemies(const Game& game)
 {
 	Stopwatch s("Updating grid_score_enemies");
 
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+	grid_score_enemies = vector<vector<double>>(height, vector<double>(width, 0.0));
+
+	for (const auto& player : game.players)
+	{
+		if (player->id == game.my_id)
+			continue;
+
+		for (auto& ship_iterator : player->ships)
 		{
-			grid_score_enemies[i][j] = 0;
-
-			// If enemy is in contiguous cell, 9
-			if (
-				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::NORTH)) ||
-				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::SOUTH)) ||
-				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::EAST)) ||
-				game.enemy_in_cell(game.game_map->directional_offset(Position(j, i), Direction::WEST))
-				)
-				grid_score_enemies[i][j] = 9;
-
-			// if enemy on cell, 10
-			if (game.game_map->cells[i][j].is_occupied_by_enemy(game.my_id))
-				grid_score_enemies[i][j] = 10;
+			for (int i = 0; i < height; ++i)
+				for (int j = 0; j < width; ++j)
+				{
+					int distance = game.distance(ship_iterator.second->position, Position(j, i));
+					grid_score_enemies[i][j] = max(grid_score_enemies[i][j], (4.0 - (double)distance) / 4.0);
+				}
 		}
+	}
+
+	//log::log("grid_score_enemies");
+	//log::log_vectorvector(grid_score_enemies);
 }
 void hlt::Scorer::add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position)
 {
@@ -385,6 +389,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 	int turns_remaining = game.turns_remaining();
 	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
 	bool can_attack = (ship->halite < 500);
+	double attack_bonus = 5.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -410,7 +415,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				)
 			{
 				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-				double total_score_attack = 5.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double total_score_attack = attack_bonus * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
@@ -539,6 +544,6 @@ void hlt::Scorer::update_grid_ship_can_move_to_dangerous_cell(const Game& game)
 
 	//for (auto& ship_it : grid_ship_can_move_to_dangerous_cell)
 	//	for (auto& position_it : ship_it.second)
-	//		//if (position_it.second != 9999999.0)
+	//		if (position_it.second != 9999999.0)
 	//			log::log(ship_it.first->to_string_ship() + " move to " + position_it.first.to_string_position() + " with score " + to_string(position_it.second));
 }
