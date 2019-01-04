@@ -387,7 +387,7 @@ namespace hlt
 			log::log("END TURN");
 			log::log("Total ships: " + to_string(my_ships_number()));
 			log::log("Total halite: " + to_string(scorer.halite_total));
-			log::log("80th pctl halite: " + to_string(scorer.halite_percentile));
+			log::log("50th pctl halite: " + to_string(scorer.halite_percentile));
 		
 			// Log all predicted direction
 			for (auto& ship_position : positions_next_turn)
