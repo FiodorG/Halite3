@@ -117,7 +117,7 @@ void hlt::Game::update_frame()
 		for (MapCell& cell : row)
 			halite_all[i++] = cell.halite;
 	std::sort(halite_all.begin(), halite_all.end());
-	scorer.halite_percentile = halite_all[(int)(0.8 * game_map->width * game_map->height)];
+	scorer.halite_percentile = halite_all[(int)(0.5 * game_map->width * game_map->height)];
 
 	// Distance manager
 	distance_manager.fill_closest_shipyard_or_dropoff(*this);

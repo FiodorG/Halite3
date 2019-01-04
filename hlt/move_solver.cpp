@@ -18,12 +18,13 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int moves = 0;
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
-	double distance_multiplier = game.is_two_player_game() ? 25.0 : (game.game_map->height <= 48 ? 35.0 : 25.0);
+	double distance_multiplier = game.is_two_player_game() ? 25.0 : 40.0;
 	int distance_no_penalty = game.is_two_player_game() ? 3 : 2;
 	int distance_move_dangerous_cell = 3;
 	double score_can_move = game.is_two_player_game() ? 200.0 : 200.0;
 	bool can_attack = (ship->halite < 500) && game.is_four_player_game() && (game.turns_remaining_percent() < 0.33);
 	int turn = 0;
+	double score = 0.0;
 
 	unordered_map<Position, int> visited_positions;
 
@@ -52,10 +53,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			if (game.scorer.get_grid_score_inspiration(current_position) >= 2)
 				d_halite *= 3;
 
-			/*if (d_halite <= 10)
-				d_halite = d_halite <= 5? 1 : 5;*/
-
-			cargo += d_halite; 
+			cargo += d_halite;
+			score += d_halite * pow(0.9, moves);
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
@@ -72,6 +71,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			else if ((score_move == 9) && (current_distance <= distance_move_dangerous_cell) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
 			{
 				cargo -= halite_to_burn;
+				score -= halite_to_burn * pow(0.9, moves);
 				moves++;
 			}
 			// if move next to enemy, return score of doing so
@@ -87,6 +87,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			else
 			{
 				cargo -= halite_to_burn;
+				score -= halite_to_burn * pow(0.9, moves);
 				moves++;
 			}
 		}
@@ -106,7 +107,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	if ((distance <= distance_no_penalty) && (final_distance <= distance_no_penalty))
 		d_distance = 0;
 
-	double score = max(cargo - (double)ship->halite, 0.0) / max((double)moves, 1.0) - (double)d_distance * distance_multiplier;
+	score = score - (double)d_distance * distance_multiplier;
 
 	if (false)
 	{
@@ -115,7 +116,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		line += " ";
 		for (Direction direction : path)
 			line += to_string_direction(direction);
-		line += " " + to_string(max(cargo - (double)ship->halite, 0.0));
+		line += " " + to_string(cargo - (double)ship->halite);
 		line += " " + to_string(moves);
 		line += " " + to_string(d_distance * distance_multiplier);
 		line += " " + to_string(score);
