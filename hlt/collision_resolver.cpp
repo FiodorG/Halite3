@@ -25,39 +25,6 @@ void CollisionResolver::fill_positions_enemies(Game& game)
 /*
 Finds the first tuples of ships that will collide. There is no ordering of importance here.
 */
-unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_enemy_collisions(const Game& game)
-{
-	unordered_map<shared_ptr<Ship>, Position> collisions;
-
-	for (auto& ship_move : game.positions_next_turn)
-	{
-		if (
-			ship_move.first->is_objective(Objective_Type::ATTACK) 
-		 || ship_move.first->is_objective(Objective_Type::BLOCK_ENEMY_BASE)
-		 || ship_move.first->is_objective(Objective_Type::SUICIDE_ON_BASE)
-		)
-			continue;
-
-		for (auto& enemy_ship_move : positions_enemies)
-			if (
-				(ship_move.second == enemy_ship_move.second) &&
-				!game.is_shipyard_or_dropoff(enemy_ship_move.second)
-			)
-				collisions[enemy_ship_move.first] = enemy_ship_move.second;
-
-		if (collisions.size())
-		{
-			collisions[ship_move.first] = ship_move.second;
-			return collisions;
-		}
-	}
-
-	return collisions;
-}
-
-/*
-Finds the first tuples of ships that will collide. There is no ordering of importance here.
-*/
 unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_collisions(const Game& game)
 {
 	unordered_map<shared_ptr<Ship>, Position> collisions;
@@ -166,19 +133,8 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		// Recompute new path otherwise
 		else
 		{
-			//log::log("Trying to fudge " + ship->to_string_ship());
-			//Position position_next_turn_old = game.positions_next_turn[ship];
-			//Position new_position = game.pathfinder.compute_shortest_path(ship->position, ship->target_position(), game);
-			//if (
-			//	position_collides_with_existing(ship, new_position, game) ||
-			//	(position_next_turn_old == new_position)
-			//)
-			//{
-				game.update_ship_target_position(ship, ship->position);
-				log::log("No resolving, stop " + ship->to_string_ship());
-			//}
-			//else
-			//	game.update_ship_target_position(ship, new_position);
+			game.update_ship_target_position(ship, ship->position);
+			log::log("No resolving, stop " + ship->to_string_ship());
 
 			return;
 		}
@@ -319,19 +275,6 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 			if (i == 50)
 				break;
 		}
-
-		//// While enemy collisions exist, edit ships one by one
-		//unordered_map<shared_ptr<Ship>, Position> enemy_collisions = find_any_enemy_collisions(game);
-		//int j = 0;
-		//while (enemy_collisions.size())
-		//{
-		//	edit_collisions(enemy_collisions, game);
-		//	enemy_collisions = find_any_enemy_collisions(game);
-		//	j++;
-
-		//	if (j == 50)
-		//		break;
-		//}
 	}
 	
 	exchange_ships(game);
