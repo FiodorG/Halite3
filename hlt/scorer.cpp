@@ -168,7 +168,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 	int radius = game.get_constant("Score: Smoothing radius");
-	double halite_multiplier = game.is_two_player_game()? 2.0 : 3.0;
+	double halite_multiplier = 3.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -280,7 +280,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? -500.0 : 0.0;
+	double score_bump = game.is_two_player_game() ? -200.0 : 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -357,14 +357,14 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	double halite_cell = (double)game.mapcell(position_to_score)->halite;
 	double halite_total = (halite_ally + halite_enemy + halite_cell);
 	
-	int inspiration_ally = (game.scorer.get_grid_score_inspiration(position_to_score) >= 3) ? 3 : 1;
-	int inspiration_enemy = (game.scorer.get_grid_score_inspiration_enemies(position_to_score) >= 3) ? 3 : 1;
+	//int inspiration_ally = (game.scorer.get_grid_score_inspiration(position_to_score) >= 3) ? 3 : 1;
+	//int inspiration_enemy = (game.scorer.get_grid_score_inspiration_enemies(position_to_score) >= 3) ? 3 : 1;
 
-	int distance_ally = game.distance(my_ship->position, position_to_score);
-	int distance_enemy = game.distance(enemy_ship->position, position_to_score);
+	//int distance_ally = game.distance(my_ship->position, position_to_score);
+	//int distance_enemy = game.distance(enemy_ship->position, position_to_score);
 
-	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0) / max(1.0, (double)distance_ally), 0.0);
-	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0) / max(1.0, (double)distance_enemy), 0.0);
+	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0), 0.0);
+	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0), 0.0);
 
 	double proba_of_me_getting_back = (score_attack_allies_nearby + score_attack_enemies_nearby > 0.0) ? score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby) : 0.0;
 
@@ -372,8 +372,8 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	if (game.enemy_dropoff_in_cell(position_to_score))
 		proba_of_me_getting_back = 0.0;
 
-	double score_ally = -halite_ally + 0.25 * halite_total * inspiration_ally * proba_of_me_getting_back;
-	double score_enemy = -halite_enemy + 0.25 * halite_total * inspiration_enemy * (1.0 - proba_of_me_getting_back);
+	double score_ally = -halite_ally + halite_total * proba_of_me_getting_back;
+	double score_enemy = -halite_enemy + halite_total * (1.0 - proba_of_me_getting_back);
 
 	return score_ally - score_enemy;
 }
@@ -410,6 +410,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				total_score -= 999999.0;
 
 			if (
+				false &&
 				is_two_player_game &&
 				can_attack &&
 				(grid_score_move[i][j] == 10) &&
@@ -498,7 +499,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
 
-	double remove_multiplier = game.is_two_player_game()? 5 : 15;
+	double remove_multiplier = 15;
 
 	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?
