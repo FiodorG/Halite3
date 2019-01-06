@@ -9,29 +9,30 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 	Stopwatch s("Updating grid_score_inspiration");
 
 	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
-			grid_score_inspiration[i][j] = 0;
-
-	int radius = 4;
+	for (int j = 0; j < game.game_map->width; ++j)
+	{
+		grid_score_inspiration[i][j] = 0;
+		grid_score_inspiration_enemies[i][j] = 0;
+	}
 
 	for (const auto& player : game.players)
+	for (auto& ship_iterator : player->ships)
 	{
-		if (player->id == game.my_id)
-			continue;
-
-		for (auto& ship_iterator : player->ships)
+		for (int i = 0; i < game.game_map->height; ++i)
+		for (int j = 0; j < game.game_map->width; ++j)
 		{
-			for (int i = 0; i < game.game_map->height; ++i)
-				for (int j = 0; j < game.game_map->width; ++j)
-				{
-					int distance = game.distance(ship_iterator.second->position, Position(j, i));
-					if (distance <= radius)
-						grid_score_inspiration[i][j] += 1;
-				}
+			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 4)
+			{
+				if (player->id == game.my_id)
+					grid_score_inspiration_enemies[i][j] += 1;
+				else
+					grid_score_inspiration[i][j] += 1;
+			}
 		}
 	}
 
 	//log::log_vectorvector(grid_score_inspiration);
+	//log::log_vectorvector(grid_score_inspiration_enemies);
 }
 void hlt::Scorer::update_grid_score_move(const Game& game)
 {
@@ -355,23 +356,24 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	double halite_enemy = (double)enemy_ship->halite;
 	double halite_cell = (double)game.mapcell(position_to_score)->halite;
 	double halite_total = (halite_ally + halite_enemy + halite_cell);
-	//int inspiration = grid_score_inspiration[i][j];
+	
+	int inspiration_ally = (game.scorer.get_grid_score_inspiration(position_to_score) >= 3) ? 3 : 1;
+	int inspiration_enemy = (game.scorer.get_grid_score_inspiration_enemies(position_to_score) >= 3) ? 3 : 1;
 
-	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0), 0.0);
-	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0), 0.0);
+	int distance_ally = game.distance(my_ship->position, position_to_score);
+	int distance_enemy = game.distance(enemy_ship->position, position_to_score);
 
-	double proba_of_me_getting_back;
-	if (score_attack_allies_nearby + score_attack_enemies_nearby > 0.0)
-		proba_of_me_getting_back = score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby);
-	else
-		proba_of_me_getting_back = 0.0; // don't attack if unclear if can get back
+	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0) / max(1.0, (double)distance_ally), 0.0);
+	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0) / max(1.0, (double)distance_enemy), 0.0);
+
+	double proba_of_me_getting_back = (score_attack_allies_nearby + score_attack_enemies_nearby > 0.0) ? score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby) : 0.0;
 
 	// do not attack on enemy dropoffs
 	if (game.enemy_dropoff_in_cell(position_to_score))
 		proba_of_me_getting_back = 0.0;
 
-	double score_ally = -halite_ally + halite_total * proba_of_me_getting_back;
-	double score_enemy = -halite_enemy + halite_total * (1.0 - proba_of_me_getting_back);
+	double score_ally = -halite_ally + 0.25 * halite_total * inspiration_ally * proba_of_me_getting_back;
+	double score_enemy = -halite_enemy + 0.25 * halite_total * inspiration_enemy * (1.0 - proba_of_me_getting_back);
 
 	return score_ally - score_enemy;
 }

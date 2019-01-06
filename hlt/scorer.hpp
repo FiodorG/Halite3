@@ -24,6 +24,7 @@ namespace hlt
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
 		vector<vector<int>> grid_score_inspiration;
+		vector<vector<int>> grid_score_inspiration_enemies;
 
 		unordered_map<PlayerId, vector<vector<double>>> grid_score_ships_nearby;
 		unordered_map<shared_ptr<Ship>, unordered_map<Position, double>> grid_ship_can_move_to_dangerous_cell;
@@ -47,6 +48,7 @@ namespace hlt
 
 			grid_score_dropoff = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_inspiration = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_inspiration_enemies = vector<vector<int>>(height, vector<int>(width, 0));
 
 			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
 		};
@@ -78,6 +80,7 @@ namespace hlt
 		void update_grid_score_dropoff(const Game& game);
 		double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
 		double get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
+		double get_grid_score_inspiration_enemies(const Position& position) const { return grid_score_inspiration_enemies[position.y][position.x]; }
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
 		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, const Game& game);
