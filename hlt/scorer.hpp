@@ -57,7 +57,7 @@ namespace hlt
 		{
 			Stopwatch s("Updating grids");
 			update_grid_score_move(game); // no dep
-			update_grid_score_enemies(game); // no dep
+			//update_grid_score_enemies(game); // no dep
 			update_grid_score_inspiration(game); // no dep
 			update_grid_score_extract(game); // depend on grid_score_inspiration
 			update_grid_score_dropoff(game); // depend on grid_score_move
@@ -78,9 +78,9 @@ namespace hlt
 		void update_grid_score_inspiration(const Game& game);
 		void update_grid_score_extract(const Game& game);
 		void update_grid_score_dropoff(const Game& game);
-		double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
-		double get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
-		double get_grid_score_inspiration_enemies(const Position& position) const { return grid_score_inspiration_enemies[position.y][position.x]; }
+		inline double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
+		inline int get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
+		inline int get_grid_score_inspiration_enemies(const Position& position) const { return grid_score_inspiration_enemies[position.y][position.x]; }
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
 		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, const Game& game);
@@ -96,10 +96,10 @@ namespace hlt
 
 		// Can Stay Still and Move
 		void update_grid_score_can_stay_still(const Game& game);
-		double get_grid_score_can_stay_still(const Position& position) const { return grid_score_can_stay_still[position.y][position.x]; }
+		inline double get_grid_score_can_stay_still(const Position& position) const { return grid_score_can_stay_still[position.y][position.x]; }
 		double get_score_ship_move_to_position(shared_ptr<Ship> ship, const Position& position, const Game& game) const;
 		void update_grid_ship_can_move_to_dangerous_cell(const Game& game);
-		double get_score_ship_can_move_to_dangerous_cell(shared_ptr<Ship> ship, const Position& position) const 
+		inline double get_score_ship_can_move_to_dangerous_cell(shared_ptr<Ship> ship, const Position& position) const 
 		{ 
 			return grid_ship_can_move_to_dangerous_cell.at(ship).at(position);
 		}
