@@ -338,6 +338,10 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 						worst_score = enemy_ship.second;
 
 				grid_score_can_stay_still[i][j] = worst_score + score_bump;
+
+				// low halite ships can always stay still
+				if (game.ally_in_cell(position) && (game.ship_on_position(position)->halite < 100))
+					grid_score_can_stay_still[i][j] = 9999999.0;
 			}
 		}
 
