@@ -66,7 +66,7 @@ namespace hlt
 			return { x, y };
 		}
 
-		int calculate_distance(const Position& source, const Position& target) const
+		inline int calculate_distance(const Position& source, const Position& target) const
 		{
 			const auto& normalized_source = normalize(source);
 			const auto& normalized_target = normalize(target);
@@ -74,10 +74,7 @@ namespace hlt
 			const int dx = abs(normalized_source.x - normalized_target.x);
 			const int dy = abs(normalized_source.y - normalized_target.y);
 
-			const int toroidal_dx = min(dx, width - dx);
-			const int toroidal_dy = min(dy, height - dy);
-
-			return toroidal_dx + toroidal_dy;
+			return min(dx, width - dx) + min(dy, height - dy);
 		}
 
 		int calculate_distance_inf(const Position& source, const Position& target) const

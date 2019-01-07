@@ -225,7 +225,7 @@ int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* current_c
 
 int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const
 {
-	int move_score = (int)floor(0.1 * current_cell->halite);
+	int move_score = (int)floor(0.1 * current_cell->halite) + 10;
 
 	// Only apply bad score for enemies/allies if they are very close
 	int distance = game.distance(source_cell->position, next_cell->position);
@@ -233,8 +233,7 @@ int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* curre
 		move_score += (int)((game.scorer.get_grid_score_move(next_cell->position) > 2) * 100.0 * (4.0 - (double)distance) / 4.0);
 
 	// do not go straight on enemy cell
-	if (distance <= 1)
-		move_score += (game.scorer.get_grid_score_move(next_cell->position) == 10) * 9999999;
+	move_score += (game.scorer.get_grid_score_move(next_cell->position) == 10) * 9999999;
 
 	return move_score;
 }
@@ -258,11 +257,12 @@ vector<MapCell*> PathFinder::dijkstra_rtb(MapCell* source_cell, MapCell* target_
 	while (!frontier.empty())
 	{
 		MapCell* current_cell = frontier.get();
+		vector<MapCell*> adjacent_cells = adjacent_cells_all(current_cell, game);
 
 		if (current_cell->position == target_cell->position)
 			return reconstruct_path(source_cell, target_cell, came_from);
 
-		for (MapCell* next_cell : adjacent_cells_all(current_cell, game))
+		for (MapCell* next_cell : adjacent_cells)
 		{
 			int new_cost = cost_so_far[current_cell] + compute_next_step_score_rtb(source_cell, current_cell, next_cell, game);
 
@@ -270,12 +270,12 @@ vector<MapCell*> PathFinder::dijkstra_rtb(MapCell* source_cell, MapCell* target_
 			{
 				cost_so_far[next_cell] = new_cost;
 				came_from[next_cell] = current_cell;
-				frontier.put(next_cell, new_cost + heuristic(next_cell, target_cell, game));
+				frontier.put(next_cell, new_cost + 10 * game.distance(next_cell->position, target_cell->position));
 			}
 		}
 	}
 
-	return vector<MapCell*>(1, source_cell);
+	return reconstruct_path(source_cell, target_cell, came_from);
 }
 
 vector<MapCell*> PathFinder::dijkstra_path(MapCell* source_cell, MapCell* target_cell, const Game& game) const

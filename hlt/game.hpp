@@ -130,14 +130,11 @@ namespace hlt
 
 			if (players.size() == 2)
 			{
-				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+				max_allowed_ships = min(150, (int)(20.0 + 0.00015 * (double)scorer.halite_initial));
 			}
 			else if (players.size() == 4)
 			{
-				max_allowed_ships = min(120, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
-
-				if (game_map->width == 32)
-					max_allowed_ships = (int)(0.8 * max_allowed_ships);
+				max_allowed_ships = min(150, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
 			}
 			else
 			{
@@ -228,14 +225,14 @@ namespace hlt
 			return positions;
 		}
 
-		int get_constant(string name) const { return constants.at(name); }
-		double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
-		double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
-		int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
-		int my_ships_number() const { return me->ships.size(); }
-		int my_dropoff_number() const { return me->dropoffs.size(); }
-		bool is_two_player_game() const { return number_of_players == 2; }
-		bool is_four_player_game() const { return number_of_players == 4; }
+		inline int get_constant(string name) const { return constants.at(name); }
+		inline double turn_percent() const { return (double)turn_number / (double)constants::MAX_TURNS; }
+		inline double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
+		inline int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
+		inline int my_ships_number() const { return me->ships.size(); }
+		inline int my_dropoff_number() const { return me->dropoffs.size(); }
+		inline bool is_two_player_game() const { return number_of_players == 2; }
+		inline bool is_four_player_game() const { return number_of_players == 4; }
 
 		Position my_shipyard_position() const { return me->shipyard->position; }
 		vector<Position> my_shipyard_or_dropoff_positions() const
@@ -334,7 +331,7 @@ namespace hlt
 				return false;
 		}
 
-		int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }
+		inline int distance(const Position& position1, const Position& position2) const {  return game_map->calculate_distance(position1, position2); }
 		int distance_from_objective(shared_ptr<Ship> ship) const { return game_map->calculate_distance(ship->position, ship->target_position()); }
 		bool ship_can_move(shared_ptr<Ship> ship) const { return (mapcell(ship)->halite < 10) || (ship->halite >= (int)floor(0.1 * mapcell(ship)->halite)); }
 		shared_ptr<Ship> closest_ship_to_position(const Position& position) const

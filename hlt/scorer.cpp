@@ -8,8 +8,11 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 {
 	Stopwatch s("Updating grid_score_inspiration");
 
-	for (int i = 0; i < game.game_map->height; ++i)
-	for (int j = 0; j < game.game_map->width; ++j)
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	for (int i = 0; i < height; ++i)
+	for (int j = 0; j < width; ++j)
 	{
 		grid_score_inspiration[i][j] = 0;
 		grid_score_inspiration_enemies[i][j] = 0;
@@ -18,8 +21,8 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 	for (const auto& player : game.players)
 	for (auto& ship_iterator : player->ships)
 	{
-		for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+		for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
 		{
 			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 4)
 			{
@@ -38,8 +41,11 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 {
 	Stopwatch s("Updating grid_score_move");
 
-	for (int i = 0; i < game.game_map->height; ++i)
-		for (int j = 0; j < game.game_map->width; ++j)
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
 		{
 			grid_score_move[i][j] = 0;
 
@@ -280,7 +286,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? -200.0 : 0.0;
+	double score_bump = game.is_two_player_game() ? -400.0 : 0.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)

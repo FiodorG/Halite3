@@ -52,11 +52,12 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int d_halite = (int)ceil(0.25 * halite);
 			visited_positions[current_position] -= d_halite;
 
-			if (game.scorer.get_grid_score_inspiration(current_position) >= 2)
+			int inspiration = game.scorer.get_grid_score_inspiration(current_position);
+			if (inspiration >= 2)
 				d_halite *= 3;
 
 			cargo += d_halite;
-			score += d_halite * pow(0.9, moves);
+			score += d_halite * pow(0.9, moves); // *(1.0 + 0.1 * max(inspiration - 2, 0));
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
