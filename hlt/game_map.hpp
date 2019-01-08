@@ -18,15 +18,15 @@ namespace hlt
 		int height;
 		vector<vector<MapCell>> cells;
 
-		MapCell* at(const Position& position)
+		inline MapCell* at(const Position& position)
 		{
 			Position normalized = normalize(position);
 			return &cells[normalized.y][normalized.x];
 		}
-		MapCell* at(int x, int y) { return at(normalize(Position(x, y))); }
-		MapCell* at(const Entity& entity) { return at(entity.position); }
-		MapCell* at(const Entity* entity) { return at(entity->position); }
-		MapCell* at(const shared_ptr<Entity>& entity) { return at(entity->position); }
+		inline MapCell* at(int x, int y) { return at(normalize(Position(x, y))); }
+		inline MapCell* at(const Entity& entity) { return at(entity.position); }
+		inline MapCell* at(const Entity* entity) { return at(entity->position); }
+		inline MapCell* at(const shared_ptr<Entity>& entity) { return at(entity->position); }
 
 		Position directional_offset(const Position& position, Direction d) const
 		{

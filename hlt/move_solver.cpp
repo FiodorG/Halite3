@@ -19,8 +19,6 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
 	double distance_multiplier = 40.0;
-	int distance_no_penalty = 2;
-	int distance_move_dangerous_cell = 3;
 	double score_can_move = 200.0;
 	bool can_attack_4p = (ship->halite < 500) && game.is_four_player_game() && (game.turns_remaining_percent() < 0.33);
 	bool can_attack_2p = (ship->halite < 500) && game.is_two_player_game();
@@ -41,7 +39,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
-			visited_positions[current_position] = game.mapcell(current_position)->halite;
+			visited_positions[current_position] = game.mapcell(current_position)->halite; // + bonus of neighboring cell
 
 		int halite = visited_positions[current_position];
 		int halite_to_burn = (int)floor(0.1 * halite);
@@ -66,12 +64,27 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
-			if (can_attack && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
+			// do not see enemies on high halite cells
+			if (can_attack_2p && ((score_move > 5) || (score_move == 0)) && (current_distance <= 3) && (game.mapcell(current_position)->halite >= 500) && (game.scorer.get_grid_score_inspiration_enemies(current_position) >= 2))
+			{
+				cargo -= halite_to_burn;
+				score -= halite_to_burn * pow(0.9, moves);
+				moves++;
+			}
+			// in 2p if good attack score, can move there TO EXTRACT
+			else if (can_attack_2p && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
+			{
+				cargo -= halite_to_burn;
+				score -= halite_to_burn * pow(0.9, moves);
+				moves++;
+			}
+			// attack in 4p end of game
+			else if (can_attack_4p && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
 			{
 				return game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) * pow(0.9, turn) / (1.0 + (double)moves);
 			}
 			// if positive combat expectation of moving to cell, then do so
-			else if ((score_move == 9) && (current_distance <= distance_move_dangerous_cell) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
+			else if ((score_move == 9) && (current_distance <= 3) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
 			{
 				cargo -= halite_to_burn;
 				score -= halite_to_burn * pow(0.9, moves);
@@ -107,7 +120,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int d_distance = final_distance - distance;
 
 	// if close to objective can move freely
-	if ((distance <= distance_no_penalty) && (final_distance <= distance_no_penalty))
+	if ((distance <= 2) && (final_distance <= 2))
 		d_distance = 0;
 
 	score = score - (double)d_distance * distance_multiplier;
