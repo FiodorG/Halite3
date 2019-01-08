@@ -68,9 +68,9 @@ namespace hlt
 
 		// Move scorer
 		void add_self_ships_to_grid_score(shared_ptr<Ship> ship, const Position& position);
-		void flush_grid_score(const Position& position) { grid_score_move[position.y][position.x] = 0; }
-		int get_grid_score_move(const Position& position) const { return grid_score_move[position.y][position.x]; }
-		double get_grid_score_enemies(const Position& position) const { return grid_score_enemies[position.y][position.x]; }
+		inline void flush_grid_score(const Position& position) { grid_score_move[position.y][position.x] = 0; }
+		inline int get_grid_score_move(const Position& position) const { return grid_score_move[position.y][position.x]; }
+		inline double get_grid_score_enemies(const Position& position) const { return grid_score_enemies[position.y][position.x]; }
 		void update_grid_score_move(const Game& game);
 		void update_grid_score_enemies(const Game& game);
 
