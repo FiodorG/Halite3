@@ -18,11 +18,11 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	int moves = 0;
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
-	double distance_multiplier = game.is_two_player_game() ? 40.0 : 40.0;
+	double distance_multiplier = game.is_two_player_game() ? 25.0 : 40.0;
 	double score_can_move = 200.0;
 	bool can_attack_4p = (ship->halite < 500) && game.is_four_player_game() && (game.turns_remaining_percent() < 0.33);
-	bool can_attack_2p = (ship->halite < 500) && game.is_two_player_game();
-	bool can_attack = can_attack_4p || can_attack_2p;
+	//bool can_attack_2p = (ship->halite < 500) && game.is_two_player_game();
+	bool can_attack = can_attack_4p; // || can_attack_2p;
 	int turn = 0;
 	double score = 0.0;
 
