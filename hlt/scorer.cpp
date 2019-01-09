@@ -16,6 +16,7 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 	{
 		grid_score_inspiration[i][j] = 0;
 		grid_score_inspiration_enemies[i][j] = 0;
+		grid_score_enemies_distance_2[i][j] = 0;
 	}
 
 	for (const auto& player : game.players)
@@ -31,11 +32,18 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 				else
 					grid_score_inspiration[i][j] += 1;
 			}
+
+			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 2)
+			{
+				if (player->id != game.my_id)
+					grid_score_enemies_distance_2[i][j] += 1;
+			}
 		}
 	}
 
 	//log::log_vectorvector(grid_score_inspiration);
 	//log::log_vectorvector(grid_score_inspiration_enemies);
+	//log::log_vectorvector(grid_score_enemies_distance_2);
 }
 void hlt::Scorer::update_grid_score_move(const Game& game)
 {
@@ -73,6 +81,36 @@ void hlt::Scorer::update_grid_score_move(const Game& game)
 
 	/*log::log("grid_score_move");
 	log::log_vectorvector(grid_score_move);*/
+}
+void hlt::Scorer::update_grid_score_neighbor_cell(const Game& game)
+{
+	Stopwatch s("Updating grid_score_neighbor_cell");
+
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	int radius = 2;
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+		{
+			grid_score_neighbor_cell[i][j] = 0.0;
+
+			for (int k = 0; k <= radius * 2; ++k)
+				for (int l = 0; l <= radius * 2; ++l)
+				{
+					int new_k = (((i - radius + k) % width) + width) % width;
+					int new_l = (((j - radius + l) % height) + height) % height;
+
+					double halite = (double)game.mapcell(new_k, new_l)->halite;
+					int distance = game.distance(Position(i, j), Position(new_k, new_l));
+
+					if ((distance <= radius) && (halite > 500))
+						grid_score_neighbor_cell[i][j] += halite * 0.1 / (1.0 + distance);
+				}
+		}
+
+	//log::log_vectorvector(grid_score_neighbor_cell);
 }
 void hlt::Scorer::update_grid_score_enemies(const Game& game)
 {
@@ -413,7 +451,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
-			double total_score = halite / (1.0 + (double)total_distance);
+			double total_score = halite * pow(0.9, max(grid_score_enemies_distance_2[i][j] - 4, 0)) / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)

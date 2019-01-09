@@ -20,11 +20,15 @@ namespace hlt
 		vector<vector<double>> grid_score_highway;
 		vector<vector<int>> grid_score_move;
 		vector<vector<double>> grid_score_enemies;
+
 		vector<vector<double>> grid_score_extract;
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
+		vector<vector<double>> grid_score_neighbor_cell;
+
 		vector<vector<int>> grid_score_inspiration;
 		vector<vector<int>> grid_score_inspiration_enemies;
+		vector<vector<int>> grid_score_enemies_distance_2;
 
 		unordered_map<PlayerId, vector<vector<double>>> grid_score_ships_nearby;
 		unordered_map<shared_ptr<Ship>, unordered_map<Position, double>> grid_ship_can_move_to_dangerous_cell;
@@ -45,10 +49,12 @@ namespace hlt
 
 			grid_score_extract = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_extract_smooth = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_neighbor_cell = vector<vector<double>>(height, vector<double>(width, 0.0));
 
 			grid_score_dropoff = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_inspiration = vector<vector<int>>(height, vector<int>(width, 0));
 			grid_score_inspiration_enemies = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_enemies_distance_2 = vector<vector<int>>(height, vector<int>(width, 0));
 
 			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
 		};
@@ -59,6 +65,7 @@ namespace hlt
 			update_grid_score_move(game); // no dep
 			//update_grid_score_enemies(game); // no dep
 			update_grid_score_inspiration(game); // no dep
+			update_grid_score_neighbor_cell(game); // no dep
 			update_grid_score_extract(game); // depend on grid_score_inspiration
 			update_grid_score_dropoff(game); // depend on grid_score_move
 			update_grid_score_targets(game); // no dep
@@ -77,10 +84,12 @@ namespace hlt
 		// Strategic extraction scorer
 		void update_grid_score_inspiration(const Game& game);
 		void update_grid_score_extract(const Game& game);
+		void update_grid_score_neighbor_cell(const Game& game);
 		void update_grid_score_dropoff(const Game& game);
 		inline double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
 		inline int get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
 		inline int get_grid_score_inspiration_enemies(const Position& position) const { return grid_score_inspiration_enemies[position.y][position.x]; }
+		inline double get_grid_score_neighbor_cell(const Position& position) const { return grid_score_neighbor_cell[position.y][position.x]; }
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
 		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, const Game& game);
