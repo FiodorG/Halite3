@@ -11,19 +11,19 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 	switch (game.game_map->width)
 	{
 	case 32:
-		max_dropoffs = (game.players.size() == 2) ? 1 : 0;
+		max_dropoffs = (game.players.size() == 2) ? 2 : 1;
 		break;
 	case 40:
-		max_dropoffs = 1;
+		max_dropoffs = (game.players.size() == 2) ? 2 : 2;
 		break;
 	case 48:
-		max_dropoffs = 2;
+		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
 		break;
 	case 56:
-		max_dropoffs = (game.players.size() == 2) ? 3 : 3;
+		max_dropoffs = (game.players.size() == 2) ? 4 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 5 : 4;
+		max_dropoffs = 6;
 		break;
 	default:
 		log::log("Unknown map width");
@@ -32,18 +32,20 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 
 	int base_dropoffs;
 
-	if (game.scorer.halite_initial <= 200000)
+	if (game.scorer.halite_initial <= 150000)
 		base_dropoffs = 0;
-	else if (game.scorer.halite_initial <= 300000) // 1 on (200000,300000]
+	else if (game.scorer.halite_initial <= 250000)
 		base_dropoffs = 1;
-	else if (game.scorer.halite_initial <= 500000) // 2 on (300000,500000]
+	else if (game.scorer.halite_initial <= 400000)
 		base_dropoffs = 2;
-	else if (game.scorer.halite_initial <= 700000) // 3 on (500000,700000]
+	else if (game.scorer.halite_initial <= 600000)
 		base_dropoffs = 3;
-	else if (game.scorer.halite_initial <= 1000000) // 4 on (700000,1000000]
+	else if (game.scorer.halite_initial <= 800000)
 		base_dropoffs = 4;
-	else // 5 above 1000000
+	else if (game.scorer.halite_initial <= 1000000)
 		base_dropoffs = 5;
+	else
+		base_dropoffs = 6;
 
 	base_dropoffs = min(base_dropoffs, max_dropoffs);
 
@@ -78,15 +80,17 @@ bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> 
 		return false;
 
 	if (game.my_dropoff_number() == 0)
-		return (game.my_ships_number() >= 20);
+		return (game.my_ships_number() >= 18);
 	else if (game.my_dropoff_number() == 1)
-		return (game.my_ships_number() >= 40);
+		return (game.my_ships_number() >= 35);
 	else if (game.my_dropoff_number() == 2)
 		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 3)
 		return (game.my_ships_number() >= 60) && (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 4)
 		return (game.my_ships_number() >= 80) && (turn_since_last_dropoff >= 40);
+	else if (game.my_dropoff_number() == 5)
+		return (game.my_ships_number() >= 100) && (turn_since_last_dropoff >= 40);
 
 	return false;
 }
