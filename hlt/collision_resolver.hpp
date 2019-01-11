@@ -31,5 +31,9 @@ namespace hlt
 		void exchange_ships(Game& game);
 		void exchange_ships_on_base(Game& game);
 		vector<Command> resolve_moves(Game& game);
+
+		// Resolve when one ship is escaping
+		bool collision_one_ship_escaping(vector<shared_ptr<Ship>> collisions_ordered, Game& game);
+		void resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game);
 	};
 }
