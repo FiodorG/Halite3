@@ -268,6 +268,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					grid_score_extract_smooth[i][j] *= multiplier;
 			}
 
+			grid_score_extract_smooth[i][j] *= pow(0.9, max(grid_score_enemies_distance_2[i][j] - 4, 0));
 			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
 		}
 
@@ -450,7 +451,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
-			double total_score = halite * pow(0.9, max(grid_score_enemies_distance_2[i][j] - 4, 0)) / (1.0 + (double)total_distance);
+			double total_score = halite / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)

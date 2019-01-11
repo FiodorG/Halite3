@@ -19,8 +19,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	double hard_no = -99999999.0;
 	double soft_no = -9999999.0;
 	double distance_multiplier = game.is_two_player_game() ? 25.0 : 40.0;
-	double score_can_move = 200.0;
-	bool can_attack_4p = (ship->halite < 500) && game.is_four_player_game() && (game.turns_remaining_percent() < 0.33);
+	bool four_player_game = game.is_four_player_game();
+	bool can_attack_4p = (ship->halite < 500) && four_player_game && (game.turns_remaining_percent() < 0.33);
 	//bool can_attack_2p = (ship->halite < 500) && game.is_two_player_game();
 	bool can_attack = can_attack_4p; // || can_attack_2p;
 	int turn = 0;
@@ -64,12 +64,19 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
+			//if (four_player_game && (score_move == 10) && (current_distance <= 2) && (score_dangerous_cell > 800.0))
+			//{
+			//	cargo -= halite_to_burn;
+			//	score -= halite_to_burn * pow(0.9, moves);
+			//	moves++;
+			//}
+			//else 
 			if (can_attack && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
 			{
 				return game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) * pow(0.9, turn) / (1.0 + (double)moves);
 			}
 			// if positive combat expectation of moving to cell, then do so
-			else if ((score_move == 9) && (current_distance <= 3) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > score_can_move))
+			else if ((score_move == 9) && (current_distance <= 3) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 200.0))
 			{
 				cargo -= halite_to_burn;
 				score -= halite_to_burn * pow(0.9, moves);
@@ -197,7 +204,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 
 	else // Objective_Type::EXTRACT_ZONE
 	{
-		int reach = (game.me->ships.size() <= 30) ? 6 : 5;
+		int reach = (game.me->ships.size() <= 50) ? 6 : 5;
 		
 		best_move = find_best_extract_move(ship, game, reach);
 	}
