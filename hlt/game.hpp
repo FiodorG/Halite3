@@ -115,8 +115,8 @@ namespace hlt
 					turns_remaining_percent() >= 0.33 &&
 					me->halite - reserved_halite >= constants::SHIP_COST &&
 					!position_occupied_next_turn(my_shipyard_position()) &&
-					my_ships_number() <= max_allowed_ships() 
-					//&& ((double)scorer.halite_total / (double)total_ships_number() < 200.0 )
+					my_ships_number() <= max_allowed_ships() &&
+					((double)scorer.halite_total / (double)total_ships_number() >= 200.0)
 					)
 				{
 					command_queue.push_back(me->shipyard->spawn());

@@ -49,7 +49,7 @@ Position PathFinder::compute_path(shared_ptr<Ship> ship, const Position& positio
 	Position target_position;
 
 	if (ship->is_objective(Objective_Type::ATTACK))
-		target_position = compute_direct_path(ship->position, position, game);
+		target_position = compute_direct_path_attack(ship->position, position, game);
 	else if (ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE))
 		target_position = compute_direct_path_no_base(ship->position, position, game);
 	else if (ship->is_objective(Objective_Type::SUICIDE_ON_BASE))
@@ -77,10 +77,26 @@ Position PathFinder::compute_direct_path_rtb(const Position& source_position, co
 	if (optimal_path.size() > 1)
 	{
 		return optimal_path.at(1)->position;
+	}
+	else
+		return source_position;
+}
 
-		/*Position next_position = optimal_path.at(1)->position;
-		if (game.distance(source_position, target_position) < game.distance(next_position, target_position))
-			return source_position;*/
+Position PathFinder::compute_direct_path_attack(const Position& source_position, const Position& target_position, Game& game)
+{
+	if ((source_position == target_position) || (game.distance(source_position, target_position) == 1))
+		return target_position;
+
+	MapCell* source_cell = game.game_map->at(source_position);
+	MapCell* target_cell = game.game_map->at(target_position);
+
+	//clock_t start = clock();
+	vector<MapCell*> optimal_path = dijkstra_attack(source_cell, target_cell, game);
+	//log::log("Dijkstra for " + source_position.to_string_position() + " to " + target_position.to_string_position() + " took: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
+
+	if (optimal_path.size() > 1)
+	{
+		return optimal_path.at(1)->position;
 	}
 	else
 		return source_position;
@@ -226,14 +242,15 @@ int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* current_c
 int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const
 {
 	int move_score = (int)floor(0.1 * current_cell->halite) + 10;
+	int score = game.scorer.get_grid_score_move(next_cell->position);
 
 	// Only apply bad score for enemies/allies if they are very close
 	int distance = game.distance(source_cell->position, next_cell->position);
 	if (distance <= 4)
-		move_score += (int)((game.scorer.get_grid_score_move(next_cell->position) > 2) * 100.0 * (4.0 - (double)distance) / 4.0);
+		move_score += (int)((score > 2) * 100.0 * (4.0 - (double)distance) / 4.0);
 
 	// do not go straight on enemy cell
-	move_score += (game.scorer.get_grid_score_move(next_cell->position) == 10) * 9999999;
+	move_score += (score == 10) * 9999999;
 
 	return move_score;
 }
@@ -416,4 +433,55 @@ vector<MapCell*> PathFinder::dijkstra_suicide(MapCell* source_cell, MapCell* tar
 	}
 
 	return vector<MapCell*>(1, source_cell);
+}
+
+int PathFinder::compute_next_step_score_attack(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const
+{
+	int move_score = 10;
+	int score = game.scorer.get_grid_score_move(next_cell->position);
+
+	// Only apply bad score for enemies/allies if they are very close
+	int distance = game.distance(source_cell->position, next_cell->position);
+	if (distance <= 4)
+		move_score += (int)(((score != 0) && (score != 9)) * 100.0 * (4.0 - (double)distance) / 4.0);
+
+	// do not go straight on enemy cell
+	move_score += (score == 10) * 9999999;
+
+	return move_score;
+}
+
+vector<MapCell*> PathFinder::dijkstra_attack(MapCell* source_cell, MapCell* target_cell, const Game& game) const
+{
+	unordered_map<MapCell*, MapCell*> came_from;
+	came_from[source_cell] = source_cell;
+
+	PriorityQueue<MapCell*, int> frontier;
+	frontier.put(source_cell, 0);
+
+	unordered_map<MapCell*, int> cost_so_far;
+	cost_so_far[source_cell] = 0;
+
+	while (!frontier.empty())
+	{
+		MapCell* current_cell = frontier.get();
+		vector<MapCell*> adjacent_cells = adjacent_cells_all(current_cell, game);
+
+		if (current_cell->position == target_cell->position)
+			return reconstruct_path(source_cell, target_cell, came_from);
+
+		for (MapCell* next_cell : adjacent_cells)
+		{
+			int new_cost = cost_so_far[current_cell] + compute_next_step_score_attack(source_cell, current_cell, next_cell, game);
+
+			if ((cost_so_far.find(next_cell) == cost_so_far.end()) || (new_cost < cost_so_far[next_cell]))
+			{
+				cost_so_far[next_cell] = new_cost;
+				came_from[next_cell] = current_cell;
+				frontier.put(next_cell, new_cost + 10 * game.distance(next_cell->position, target_cell->position));
+			}
+		}
+	}
+
+	return reconstruct_path(source_cell, target_cell, came_from);
 }
