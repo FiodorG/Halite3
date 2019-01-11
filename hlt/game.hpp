@@ -135,7 +135,13 @@ namespace hlt
 			else if (players.size() == 4)
 			{
 				max_allowed_ships = min(150, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
-			}
+
+				if (game_map->width == 32)
+					max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
+
+				if (game_map->width == 40)
+					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
+			} 
 			else
 			{
 				log::log("Unknown number of players");
