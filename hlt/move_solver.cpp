@@ -85,7 +85,8 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			// if move next to enemy, return score of doing so
 			else if ((score_move == 9) && (current_distance == 1))
 			{
-				return soft_no + game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position);
+				return soft_no - game.scorer.get_score_ship_move_to_position(ship, current_position, game);
+				//return soft_no + game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position);
 			}
 			// If ally or enemy in other cell, hard no
 			else if (score_move > 0)

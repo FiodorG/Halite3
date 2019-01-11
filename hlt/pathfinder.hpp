@@ -28,12 +28,11 @@ namespace hlt
 		PathFinder(int width) : width(width) {}
 
 		Position compute_path(shared_ptr<Ship> ship, const Position& target_position, Game& game);
-
-		// Simple navigation
 		Position compute_direct_path(const Position& source_position, const Position& target_position, Game& game);
 		Position compute_direct_path_no_base(const Position& source_position, const Position& target_position, Game& game);
 		Position compute_direct_path_suicide(const Position& source_position, const Position& target_position, Game& game);
 		Position compute_direct_path_rtb(const Position& source_position, const Position& target_position, Game& game);
+		Position compute_direct_path_attack(const Position& source_position, const Position& target_position, Game& game);
 
 		// Dijkstra suicide
 		vector<MapCell*> dijkstra_suicide(MapCell* source_cell, MapCell* target_cell, MapCell* enemy_base, const Game& game) const;
@@ -46,6 +45,10 @@ namespace hlt
 		// Dijkstra RTB
 		vector<MapCell*> dijkstra_rtb(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
 		int compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const;
+
+		// Dijkstra Attack
+		vector<MapCell*> dijkstra_attack(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
+		int compute_next_step_score_attack(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const;
 
 		// Dijkstra
 		Position compute_shortest_path(const Position& source_position, const Position& target_position, Game& game);
