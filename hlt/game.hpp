@@ -115,7 +115,8 @@ namespace hlt
 					turns_remaining_percent() >= 0.33 &&
 					me->halite - reserved_halite >= constants::SHIP_COST &&
 					!position_occupied_next_turn(my_shipyard_position()) &&
-					my_ships_number() <= max_allowed_ships()
+					my_ships_number() <= max_allowed_ships() 
+					//&& ((double)scorer.halite_total / (double)total_ships_number() < 200.0 )
 					)
 				{
 					command_queue.push_back(me->shipyard->spawn());
@@ -236,6 +237,13 @@ namespace hlt
 		inline double turns_remaining_percent() const { return (double)(constants::MAX_TURNS - turn_number) / (double)constants::MAX_TURNS; }
 		inline int turns_remaining() const { return constants::MAX_TURNS - turn_number; }
 		inline int my_ships_number() const { return me->ships.size(); }
+		int total_ships_number() const 
+		{ 
+			int n = 0;
+			for (const auto& player : players)
+				n += player->ships.size();
+			return n;
+		}
 		inline int my_dropoff_number() const { return me->dropoffs.size(); }
 		inline bool is_two_player_game() const { return number_of_players == 2; }
 		inline bool is_four_player_game() const { return number_of_players == 4; }

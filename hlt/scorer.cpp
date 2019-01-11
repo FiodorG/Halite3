@@ -465,7 +465,9 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				)
 			{
 				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-				double total_score_attack = 4.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double total_score_attack = 2.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+
+				// maybe try to limit range here?
 
 				if (total_score_attack > total_score)
 				{

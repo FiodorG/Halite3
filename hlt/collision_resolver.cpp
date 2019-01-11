@@ -10,9 +10,6 @@ using namespace hlt;
 using namespace std;
 
 
-/*
-Fill positions of enemies this turn
-*/
 void CollisionResolver::fill_positions_enemies(Game& game)
 {
 	positions_enemies.clear();
@@ -22,9 +19,6 @@ void CollisionResolver::fill_positions_enemies(Game& game)
 				positions_enemies[cell.ship] = cell.ship->position;
 }
 
-/*
-Finds the first tuples of ships that will collide. There is no ordering of importance here.
-*/
 unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_collisions(const Game& game)
 {
 	unordered_map<shared_ptr<Ship>, Position> collisions;
@@ -52,9 +46,6 @@ unordered_map<shared_ptr<Ship>, Position> CollisionResolver::find_any_collisions
 	return collisions;
 }
 
-/*
-Checks if a new position will collide with an existing one
-*/
 bool CollisionResolver::position_collides_with_existing(shared_ptr<Ship> ship, const Position& position, const Game& game)
 {
 	// Check for own collisions
@@ -84,9 +75,87 @@ bool CollisionResolver::is_ship_switching_places(shared_ptr<Ship> ship, Game& ga
 	return false;
 }
 
-/*
-Try to change the move of the first ship in the collision tuple that moves. No importance ordering here.
-*/
+bool CollisionResolver::collision_one_ship_escaping(vector<shared_ptr<Ship>> collisions_ordered, Game& game)
+{
+	return game.is_two_player_game() && 
+		   (collisions_ordered.size() == 2) && 
+		   ((game.scorer.get_grid_score_can_stay_still(collisions_ordered[0]->position) <= 0.0) ||
+		   (game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= 0.0));
+}
+
+void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
+{
+	shared_ptr<Ship> ship1 = collisions_ordered[0];
+	shared_ptr<Ship> ship2 = collisions_ordered[1];
+
+	double ship1_score = game.scorer.get_grid_score_can_stay_still(ship1->position);
+	double ship2_score = game.scorer.get_grid_score_can_stay_still(ship2->position);
+
+	bool ship1_escaping = ship1_score <= 0.0;
+	bool ship2_escaping = ship2_score <= 0.0;
+
+	// find which ship to move, either the only one escaping, if both are escaping, pick the one with most halite
+	shared_ptr<Ship> ship_to_move;
+	double ship_to_move_score;
+
+	if (ship1_escaping && !ship2_escaping)
+	{
+		ship_to_move = ship2;
+		ship_to_move_score = ship2_score;
+	}
+	else if (!ship1_escaping && ship2_escaping)
+	{
+		ship_to_move = ship1;
+		ship_to_move_score = ship1_score;
+	}
+	else if (ship1_escaping && ship2_escaping)
+	{
+		if (ship1->halite >= ship2->halite)
+		{
+			ship_to_move = ship2;
+			ship_to_move_score = ship2_score;
+		}
+		else
+		{
+			ship_to_move = ship1;
+			ship_to_move_score = ship1_score;
+		}
+	}
+	else // no one escaping
+		return;
+
+	// try to find best place for moving ship to go
+	vector<double> scores = { -99999999.0 }; // to reach 10m around -200 score
+	vector<Position> positions = { ship_to_move->position };
+
+	for (auto& position : game.adjacent_positions_to_position(ship_to_move->position))
+	{
+		if (position_collides_with_existing(ship_to_move, position, game))
+			continue;
+
+		if (position == collisions[ship_to_move])
+			continue;
+
+		vector<Direction> path = { game.game_map->get_move(ship_to_move->position, position) };
+		scores.push_back(game.move_solver.score_path(ship_to_move, path, game));
+		positions.push_back(position);
+	}
+
+	int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
+	Position best_position = positions[best_score_index];
+
+	game.update_ship_target_position(ship_to_move, best_position);
+	log::log("Collision on escape:");
+	log::log("Collision from fleeing detected " + ship1->to_string_ship() + " and " + ship2->to_string_ship());
+	log::log(ship_to_move->to_string_ship() + " is selected with standstill score " + to_string(ship_to_move_score));
+	log::log(ship_to_move->to_string_ship() + " is moving to " + best_position.to_string_position() + " with score " + to_string(scores[best_score_index]));
+
+	for (size_t i = 0; i < scores.size(); i++)
+		log::log(positions[i].to_string_position() + " with score " + to_string(scores[i]));
+
+	log::log("End Collision on escape");
+}
+
 void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position> collisions, Game& game)
 {
 	// First order ships/positions in increasing order of halite
@@ -94,13 +163,19 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 	for (auto& ship_iterator : collisions)
 		ships_in_priority.put(ship_iterator.first, ship_iterator.first->halite);
 
-	list<shared_ptr<Ship>> collisions_ordered;
+	vector<shared_ptr<Ship>> collisions_ordered;
 	while (!ships_in_priority.empty())
 		collisions_ordered.push_back(ships_in_priority.get());
 
 	log::log("Collisions:");
 	for (auto& ship : collisions_ordered)
 		log::log(ship->to_string_ship() + " moving to " + collisions[ship].to_string_position());
+
+	if (collision_one_ship_escaping(collisions_ordered, game))
+	{
+		resolve_collisions_one_ship_escaping(collisions, collisions_ordered, game);
+		return;
+	}
 
 	for (auto& ship : collisions_ordered)
 	{
@@ -134,18 +209,17 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 		else
 		{
 			game.update_ship_target_position(ship, ship->position);
-			log::log("No resolving, stop " + ship->to_string_ship());
+			log::log("Stop " + ship->to_string_ship());
 
 			return;
 		}
 	}
 }
 
-/*
-Third pass to exchange two immobilized ships if doing so will both make them get closer to their target
-*/
 void CollisionResolver::exchange_ships(Game& game)
 {
+	// Third pass to exchange two immobilized ships if doing so will both make them get closer to their target
+
 	unordered_map<EntityId, shared_ptr<Ship>> ships_selected;
 	list<tuple<shared_ptr<Ship>, shared_ptr<Ship>>> ships_to_switch;
 
@@ -251,9 +325,6 @@ void CollisionResolver::exchange_ships_on_base(Game& game)
 	}
 }
 
-/*
-Main function to resolve moves
-*/
 vector<Command> CollisionResolver::resolve_moves(Game& game)
 {
 	vector<Command> resolved_moves;
