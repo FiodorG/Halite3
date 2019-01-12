@@ -443,10 +443,7 @@ int PathFinder::compute_next_step_score_attack(MapCell* source_cell, MapCell* cu
 	// Only apply bad score for enemies/allies if they are very close
 	int distance = game.distance(source_cell->position, next_cell->position);
 	if (distance <= 4)
-		move_score += (int)(((score != 0) && (score != 9)) * 100.0 * (4.0 - (double)distance) / 4.0);
-
-	// do not go straight on enemy cell
-	move_score += (score == 10) * 9999999;
+		move_score += ((score >= 1) && (score <= 3)) * 9999999;
 
 	return move_score;
 }

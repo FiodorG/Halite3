@@ -453,6 +453,10 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
 			double total_score = halite / (1.0 + (double)total_distance);
 
+			// Cannot go to objectives further than turns remaining
+			if ((int)(1.5 * total_distance) >= turns_remaining)
+				total_score -= 999999.0;
+
 			if (
 				is_two_player_game &&
 				can_attack &&
@@ -460,14 +464,8 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				!game.ship_on_position(position)->is_targeted
 				)
 			{
-				double total_score_attack;
-				if (distance_cell_ship <= 5)
-				{
-					double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-					total_score_attack = 3.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
-				}
-				else
-					total_score_attack = 0.0;
+				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
+				double total_score_attack = 4.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
@@ -475,10 +473,6 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 					type = Objective_Type::ATTACK;
 				}
 			}
-
-			// Cannot go to objectives further than turns remaining
-			if ((int)(1.5 * total_distance) >= turns_remaining)
-				total_score -= 999999.0;
 
 			if (total_score > max_score)
 			{
