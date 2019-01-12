@@ -55,7 +55,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 				d_halite *= 3;
 
 			cargo += d_halite;
-			score += ((double)d_halite + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves); // *(1.0 + 0.1 * max(inspiration - 2, 0));
+			score += ((double)d_halite + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves) * (1.0 + 0.1 * max(inspiration - 2, 0));
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
