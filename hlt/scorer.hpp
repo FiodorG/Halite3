@@ -101,7 +101,7 @@ namespace hlt
 		// Attack
 		void update_grid_score_targets(const Game& game);
 		double get_grid_score_ships_nearby(PlayerId id, const Position& position) const { return grid_score_ships_nearby.at(id)[position.y][position.x]; }
-		double combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, const Game& game) const;
+		double combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, const Game& game, bool big_cell = false) const;
 
 		// Can Stay Still and Move
 		void update_grid_score_can_stay_still(const Game& game);

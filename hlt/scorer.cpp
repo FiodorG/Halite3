@@ -399,7 +399,7 @@ double Scorer::get_score_ship_move_to_position(shared_ptr<Ship> ship, const Posi
 	return score;
 }
 
-double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, const Game& game) const
+double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_ship, const Position& position_to_score, const Game& game, bool big_cell) const
 {
 	double halite_ally = (double)my_ship->halite;
 	double halite_enemy = (double)enemy_ship->halite;
@@ -420,6 +420,9 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	// do not attack on enemy dropoffs
 	if (game.enemy_dropoff_in_cell(position_to_score))
 		proba_of_me_getting_back = 0.0;
+
+	if (big_cell && (halite_cell > 800))
+		proba_of_me_getting_back = 1.0;
 
 	double score_ally = -halite_ally + halite_total * proba_of_me_getting_back;
 	double score_enemy = -halite_enemy + halite_total * (1.0 - proba_of_me_getting_back);
@@ -464,7 +467,7 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 				!game.ship_on_position(position)->is_targeted
 				)
 			{
-				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
+				double score_combat = combat_score(ship, game.ship_on_position(position), position, game, true);
 				double total_score_attack = 4.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
