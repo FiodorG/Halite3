@@ -79,8 +79,8 @@ bool CollisionResolver::collision_one_ship_escaping(vector<shared_ptr<Ship>> col
 {
 	return game.is_two_player_game() && 
 		   (collisions_ordered.size() == 2) && 
-		   ((game.scorer.get_grid_score_can_stay_still(collisions_ordered[0]->position) <= -200.0) ||
-		   (game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= -200.0));
+		   ((game.scorer.get_grid_score_can_stay_still(collisions_ordered[0]->position) <= -400.0) ||
+		   (game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= -400.0));
 }
 
 void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
@@ -91,8 +91,8 @@ void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<share
 	double ship1_score = game.scorer.get_grid_score_can_stay_still(ship1->position);
 	double ship2_score = game.scorer.get_grid_score_can_stay_still(ship2->position);
 
-	bool ship1_escaping = ship1_score <= -200.0;
-	bool ship2_escaping = ship2_score <= -200.0;
+	bool ship1_escaping = ship1_score <= -400.0;
+	bool ship2_escaping = ship2_score <= -400.0;
 
 	// find which ship to move, either the only one escaping, if both are escaping, pick the one with most halite
 	shared_ptr<Ship> ship_to_move;

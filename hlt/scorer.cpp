@@ -192,10 +192,12 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				}
 
 			// add more weight in center for 4p games, uniformly in the area.
-			if (game.is_four_player_game() && game.close_to_crowded_area(Position(j, i), width / 4))
-				grid_score_dropoff[i][j] *= 1.25;
+			if (game.is_four_player_game() && (
+				game.close_to_crowded_area(Position(j, i), width / 4) ||
+				game.close_to_axis(Position(j, i), 2)
+				))
+				grid_score_dropoff[i][j] *= 1.3;
 
-			// Any structure has 0 score
 			if (game.distance(game.get_closest_enemy_shipyard_or_dropoff(Position(j, i)), Position(j, i)) <= 2)
 				grid_score_dropoff[i][j] = 0.0;
 
@@ -421,8 +423,8 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	if (game.enemy_dropoff_in_cell(position_to_score))
 		proba_of_me_getting_back = 0.0;
 
-	if (big_cell && (halite_cell > 800))
-		proba_of_me_getting_back = 1.0;
+	//if (big_cell && (halite_cell > 800))
+	//	proba_of_me_getting_back = 1.0;
 
 	double score_ally = -halite_ally + halite_total * proba_of_me_getting_back;
 	double score_enemy = -halite_enemy + halite_total * (1.0 - proba_of_me_getting_back);
@@ -432,6 +434,14 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 
 Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose) const
 {
+	if (game.is_two_player_game())
+		return find_best_objective_cell_2p(ship, game, verbose);
+	else
+		return find_best_objective_cell_4p(ship, game, verbose);
+}
+
+Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const Game& game, bool verbose) const
+{
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
@@ -439,7 +449,6 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
-	bool is_two_player_game = game.is_two_player_game();
 	int turns_remaining = game.turns_remaining();
 	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
 	bool can_attack = (ship->halite < 500);
@@ -456,19 +465,14 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 			int total_distance = distance_cell_ship + distance_cell_shipyard;
 			double total_score = halite / (1.0 + (double)total_distance);
 
-			// Cannot go to objectives further than turns remaining
-			if ((int)(1.5 * total_distance) >= turns_remaining)
-				total_score -= 999999.0;
-
 			if (
-				is_two_player_game &&
 				can_attack &&
 				(grid_score_move[i][j] == 10) &&
 				!game.ship_on_position(position)->is_targeted
 				)
 			{
-				double score_combat = combat_score(ship, game.ship_on_position(position), position, game, true);
-				double total_score_attack = 4.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
+				double total_score_attack = 2.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
@@ -476,6 +480,10 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 					type = Objective_Type::ATTACK;
 				}
 			}
+
+			// Cannot go to objectives further than turns remaining
+			if ((int)(1.5 * total_distance) >= turns_remaining)
+				total_score -= 999999.0;
 
 			if (total_score > max_score)
 			{
@@ -498,6 +506,54 @@ Objective hlt::Scorer::find_best_objective_cell(shared_ptr<Ship> ship, const Gam
 	//}
 
 	return Objective(-1, max_type, game.mapcell(max_i, max_j)->position, max_score);
+}
+
+Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const Game& game, bool verbose) const
+{
+	int width = game.game_map->width;
+	int height = game.game_map->height;
+
+	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
+
+	double max_score = -DBL_MAX;
+	int max_i = 0, max_j = 0;
+	int turns_remaining = game.turns_remaining();
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+		{
+			double halite = grid_score_extract_smooth[i][j];
+			Position position = Position(j, i);
+			int distance_cell_ship = game.distance(ship->position, position);
+			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
+
+			int total_distance = distance_cell_ship + distance_cell_shipyard;
+			double total_score = halite / (1.0 + (double)total_distance);
+
+			// Cannot go to objectives further than turns remaining
+			if ((int)(1.5 * total_distance) >= turns_remaining)
+				total_score -= 999999.0;
+
+			if (total_score > max_score)
+			{
+				max_score = total_score;
+				max_i = i;
+				max_j = j;
+			}
+		}
+
+	//if (verbose)
+	//{
+	//	log::log(ship->to_string_ship());
+
+	//	log::log("Grid Score Extract");
+	//	log::log_vectorvector(grid_score_extract_smooth);
+
+	//	log::log("Total Score");
+	//	log::log_vectorvector(total_score);
+	//}
+
+	return Objective(-1, Objective_Type::EXTRACT_ZONE, game.mapcell(max_i, max_j)->position, max_score);
 }
 
 pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> shipyard, vector<Position> dropoffs, const Game& game) const

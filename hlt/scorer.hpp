@@ -92,6 +92,8 @@ namespace hlt
 		inline double get_grid_score_neighbor_cell(const Position& position) const { return grid_score_neighbor_cell[position.y][position.x]; }
 
 		Objective find_best_objective_cell(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
+		Objective find_best_objective_cell_2p(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
+		Objective find_best_objective_cell_4p(shared_ptr<Ship> ship, const Game& game, bool verbose = false) const;
 		void decreases_score_in_target_area(shared_ptr<Ship> ship, const Position& position, const Game& game);
 		void decreases_score_in_target_cell(shared_ptr<Ship> ship, const Position& position, double mult, const Game& game) { grid_score_extract_smooth[position.y][position.x] *= mult; }
 
