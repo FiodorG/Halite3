@@ -142,9 +142,6 @@ namespace hlt
 
 				if (game_map->width == 40)
 					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
-
-				if (game_map->width == 64)
-					max_allowed_ships = (int)(1.2 * max_allowed_ships) + 1;
 			} 
 			else
 			{
