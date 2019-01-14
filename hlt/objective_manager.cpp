@@ -23,7 +23,7 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = (game.players.size() == 2) ? 5 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 8 : 6;
+		max_dropoffs = (game.players.size() == 2) ? 8 : 7;
 		break;
 	default:
 		log::log("Unknown map width");
@@ -46,8 +46,10 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 			base_dropoffs = 4;
 		else if (game.scorer.halite_initial <= 1000000)
 			base_dropoffs = 5;
-		else
+		else if (game.scorer.halite_initial <= 1200000)
 			base_dropoffs = 6;
+		else
+			base_dropoffs = 7;
 	}
 	else
 	{
@@ -103,22 +105,25 @@ bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> 
 	if (game.my_dropoff_number() >= max_allowed_dropoffs(game))
 		return false;
 
+	if (game.turns_remaining_percent() <= 0.33)
+		return false;
+
 	if (game.my_dropoff_number() == 0)
-		return (game.my_ships_number() >= 18);
+		return (game.my_ships_number() >= 15);
 	else if (game.my_dropoff_number() == 1)
-		return (game.my_ships_number() >= 35);
+		return (game.my_ships_number() >= 30);
 	else if (game.my_dropoff_number() == 2)
-		return (game.my_ships_number() >= 40) && (turn_since_last_dropoff >= 40);
+		return (game.my_ships_number() >= 45) && (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 3)
 		return (game.my_ships_number() >= 60) && (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 4)
 		return (game.my_ships_number() >= 80) && (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 5)
-		return (game.my_ships_number() >= 100) && (turn_since_last_dropoff >= 40);
+		return (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 6)
-		return (game.my_ships_number() >= 100) && (turn_since_last_dropoff >= 40);
+		return (turn_since_last_dropoff >= 40);
 	else if (game.my_dropoff_number() == 7)
-		return (game.my_ships_number() >= 100) && (turn_since_last_dropoff >= 40);
+		return (turn_since_last_dropoff >= 40);
 
 	return false;
 }

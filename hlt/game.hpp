@@ -142,6 +142,9 @@ namespace hlt
 
 				if (game_map->width == 40)
 					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
+
+				if (game_map->width == 64)
+					max_allowed_ships = (int)(1.2 * max_allowed_ships) + 1;
 			} 
 			else
 			{
@@ -339,6 +342,23 @@ namespace hlt
 				(distance(position, upper_right) <= d) ||
 				(distance(position, lower_left) <= d) ||
 				(distance(position, lower_right) <= d)
+				)
+				return true;
+			else
+				return false;
+		}
+
+		bool close_to_axis(const Position& position, int d) const
+		{
+			int width = game_map->width;
+
+			if (
+				(position.x <= d) ||
+				(position.y <= d) ||
+				(width - position.y <= d) ||
+				(width - position.x <= d) ||
+				(abs(position.x - width / 2) <= d) ||
+				(abs(position.y - width / 2) <= d)
 				)
 				return true;
 			else
