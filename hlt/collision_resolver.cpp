@@ -77,10 +77,11 @@ bool CollisionResolver::is_ship_switching_places(shared_ptr<Ship> ship, Game& ga
 
 bool CollisionResolver::collision_one_ship_escaping(vector<shared_ptr<Ship>> collisions_ordered, Game& game)
 {
-	return game.is_two_player_game() && 
-		   (collisions_ordered.size() == 2) && 
-		   ((game.scorer.get_grid_score_can_stay_still(collisions_ordered[0]->position) <= -400.0) ||
-		   (game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= -400.0));
+	double escape_score = game.is_two_player_game() ? -400.0 : -600.0;
+
+	return ((collisions_ordered.size() == 2) &&
+		((game.scorer.get_grid_score_can_stay_still(collisions_ordered[0]->position) <= escape_score) ||
+		(game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= escape_score)));
 }
 
 void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
@@ -91,8 +92,10 @@ void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<share
 	double ship1_score = game.scorer.get_grid_score_can_stay_still(ship1->position);
 	double ship2_score = game.scorer.get_grid_score_can_stay_still(ship2->position);
 
-	bool ship1_escaping = ship1_score <= -400.0;
-	bool ship2_escaping = ship2_score <= -400.0;
+	double escape_score = game.is_two_player_game() ? -400.0 : -600.0;
+
+	bool ship1_escaping = ship1_score <= escape_score;
+	bool ship2_escaping = ship2_score <= escape_score;
 
 	// find which ship to move, either the only one escaping, if both are escaping, pick the one with most halite
 	shared_ptr<Ship> ship_to_move;
@@ -325,6 +328,40 @@ void CollisionResolver::exchange_ships_on_base(Game& game)
 	}
 }
 
+void CollisionResolver::check_rtb_ships_safe(Game& game)
+{
+	for (auto& ship_position : game.positions_next_turn)
+	{
+		shared_ptr<Ship> ship = ship_position.first;
+		Position position_next_turn = ship_position.second;
+
+		if (
+			ship->is_objective(Objective_Type::BACK_TO_BASE) && 
+			(ship->position == position_next_turn) &&
+			(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, position_next_turn) <= -200)
+		)
+		{
+			vector<Position> adjacent_positions = game.adjacent_positions_to_position(ship->position);
+
+			for (auto& position : adjacent_positions)
+			{
+				if (
+					(!position_collides_with_existing(ship, position, game) && 
+					(game.distance(position, ship->position) == 1)) &&
+					(game.scorer.get_grid_score_move(position) == 0)
+				)
+				{
+					game.positions_next_turn[ship] = position;
+					log::log("Fudge RTB ship " + ship->to_string_ship() + " to " + position.to_string_position());
+					goto endloop;
+				}
+			}
+		}
+
+		endloop:;
+	}
+}
+
 vector<Command> CollisionResolver::resolve_moves(Game& game)
 {
 	vector<Command> resolved_moves;
@@ -350,6 +387,7 @@ vector<Command> CollisionResolver::resolve_moves(Game& game)
 	
 	exchange_ships(game);
 	exchange_ships_on_base(game);
+	check_rtb_ships_safe(game);
 
 	// Generate Command vector
 	for (auto& ship_position : game.positions_next_turn)

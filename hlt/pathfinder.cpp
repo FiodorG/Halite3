@@ -249,6 +249,13 @@ int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* curre
 	if (distance <= 4)
 		move_score += (int)((score > 2) * 100.0 * (4.0 - (double)distance) / 4.0);
 
+	if (distance <= 3)
+	{
+		shared_ptr<Ship> ship = game.ship_on_position(source_cell->position);
+		double danger_cell = game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, next_cell->position);
+		move_score += (int)((score == 9) * 2.0 * max(-danger_cell, 0.0) * (3.0 - (double)distance) / 3.0);
+	}
+
 	// do not go straight on enemy cell
 	move_score += (score == 10) * 9999999;
 

@@ -30,6 +30,7 @@ namespace hlt
 		void fill_positions_enemies(Game& game);
 		void exchange_ships(Game& game);
 		void exchange_ships_on_base(Game& game);
+		void check_rtb_ships_safe(Game& game);
 		vector<Command> resolve_moves(Game& game);
 
 		// Resolve when one ship is escaping

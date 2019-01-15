@@ -17,7 +17,7 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = (game.players.size() == 2) ? 3 : 2;
 		break;
 	case 48:
-		max_dropoffs = (game.players.size() == 2) ? 4 : 2;
+		max_dropoffs = (game.players.size() == 2) ? 4 : 3;
 		break;
 	case 56:
 		max_dropoffs = (game.players.size() == 2) ? 5 : 3;
