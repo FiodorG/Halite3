@@ -338,7 +338,7 @@ void CollisionResolver::check_rtb_ships_safe(Game& game)
 		if (
 			ship->is_objective(Objective_Type::BACK_TO_BASE) && 
 			(ship->position == position_next_turn) &&
-			(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, position_next_turn) <= -200)
+			(game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, position_next_turn) <= -400.0)
 		)
 		{
 			vector<Position> adjacent_positions = game.adjacent_positions_to_position(ship->position);
