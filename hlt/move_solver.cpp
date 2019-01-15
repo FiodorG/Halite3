@@ -65,13 +65,13 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
-			//if (four_player_game && (score_move == 10) && (current_distance <= 2) && (score_dangerous_cell > 800.0))
-			//{
-			//	cargo -= halite_to_burn;
-			//	score -= halite_to_burn * pow(0.9, moves);
-			//	moves++;
-			//}
-			//else 
+			if (four_player_game && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 800.0))
+			{
+				cargo -= halite_to_burn;
+				score -= halite_to_burn * pow(0.9, moves);
+				moves++;
+			}
+			else 
 			if (can_attack && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 400.0))
 			{
 				return game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) * pow(0.9, turn) / (1.0 + (double)moves);
