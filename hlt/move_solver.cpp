@@ -61,6 +61,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 		else if (cargo >= halite_to_burn)
 		{
 			current_position = game.game_map->directional_offset(current_position, direction);
+
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 

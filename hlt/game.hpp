@@ -94,6 +94,35 @@ namespace hlt
 			scorer.add_self_ships_to_grid_score(ship, position);
 		}
 
+		bool enough_halite_per_ship()
+		{
+			double limit;
+
+			switch (game_map->width)
+			{
+			case 32:
+				limit = 200.0;
+				break;
+			case 40:
+				limit = 300.0;
+				break;
+			case 48:
+				limit = 300.0;
+				break;
+			case 56:
+				limit = 400.0;
+				break;
+			case 64:
+				limit = 400.0;
+				break;
+			default:
+				log::log("Unknown map width");
+				exit(1);
+			}
+
+			return ((double)scorer.halite_total / (double)total_ships_number() >= limit);
+		}
+
 		void generate_new_ships()
 		{
 			if (players.size() == 2)
@@ -116,7 +145,7 @@ namespace hlt
 					me->halite - reserved_halite >= constants::SHIP_COST &&
 					!position_occupied_next_turn(my_shipyard_position()) &&
 					my_ships_number() <= max_allowed_ships() &&
-					((double)scorer.halite_total / (double)total_ships_number() >= 200.0)
+					enough_halite_per_ship()
 					)
 				{
 					command_queue.push_back(me->shipyard->spawn());
