@@ -412,11 +412,32 @@ namespace hlt
 		}
 		inline bool switch_to_half_full_for_rtb(shared_ptr<Ship> ship) const
 		{
-			double limit = 23000.0 * (double)game_map->width * (double)game_map->width / 1024.0;
+			int limit;
+			switch (game_map->width)
+			{
+			case 32:
+				limit = 23000;
+				break;
+			case 40:
+				limit = 35000;
+				break;
+			case 48:
+				limit = 50000;
+				break;
+			case 56:
+				limit = 60000;
+				break;
+			case 64:
+				limit = 70000;
+				break;
+			default:
+				log::log("Unknown map width");
+				exit(1);
+			}
 
 			return is_four_player_game() &&
 				(turns_remaining_percent() <= 0.5) &&
-				(scorer.halite_total <= (int)limit) &&
+				(scorer.halite_total <= limit) &&
 				(scorer.get_grid_score_extract_nearby(ship->position) <= 300);
 		}
 
