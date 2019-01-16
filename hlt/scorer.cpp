@@ -17,7 +17,7 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 		grid_score_inspiration[i][j] = 0;
 		grid_score_inspiration_enemies[i][j] = 0;
 		grid_score_enemies_distance_2[i][j] = 0;
-		grid_score_enemies_distance_5[i][j] = 0;
+		grid_score_enemies_distance_7[i][j] = 0;
 	}
 
 	for (const auto& player : game.players)
@@ -40,10 +40,10 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 					grid_score_enemies_distance_2[i][j] += 1;
 			}
 
-			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 5)
+			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 7)
 			{
 				if (player->id != game.my_id)
-					grid_score_enemies_distance_5[i][j] += 1;
+					grid_score_enemies_distance_7[i][j] += 1;
 			}
 		}
 	}
@@ -206,8 +206,8 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				))
 				grid_score_dropoff[i][j] *= 1.3;
 
-			if (false)
-				grid_score_dropoff[i][j] *= (1.0 + 0.1 * min(max(grid_score_enemies_distance_5[i][j] - 4, 0), 8));
+			if (game.is_four_player_game())
+				grid_score_dropoff[i][j] *= (1.0 + 0.1 * min(max(grid_score_enemies_distance_7[i][j] - 4, 0), 8));
 
 			if (game.distance(game.get_closest_enemy_shipyard_or_dropoff(Position(j, i)), Position(j, i)) <= 2)
 				grid_score_dropoff[i][j] = 0.0;
