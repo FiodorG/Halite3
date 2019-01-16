@@ -182,7 +182,7 @@ pair<Position, double> MoveSolver::find_best_action(shared_ptr<Ship> ship, const
 	{
 		// If it's worth it to stop then stop
 		if (
-			(game.halite_on_position(ship->position) >= 100) &&
+			(game.halite_on_position(ship->position) >= max(20.0, (double)ship->halite / 10.0)) &&
 			((int)(1.25 * (1000 - ship->halite)) >= (int)ceil(0.25 * game.halite_on_position(ship->position))) &&
 			!game.enemy_in_adjacent_cell(ship->position)
 			)

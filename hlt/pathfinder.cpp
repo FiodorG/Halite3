@@ -70,8 +70,10 @@ Position PathFinder::compute_direct_path_rtb(const Position& source_position, co
 	MapCell* source_cell = game.game_map->at(source_position);
 	MapCell* target_cell = game.game_map->at(target_position);
 
+	bool add_burned = !game.switch_to_half_full_for_rtb(game.ship_on_position(source_position));
+
 	//clock_t start = clock();
-	vector<MapCell*> optimal_path = dijkstra_rtb(source_cell, target_cell, game);
+	vector<MapCell*> optimal_path = dijkstra_rtb(source_cell, target_cell, game, add_burned);
 	//log::log("Dijkstra for " + source_position.to_string_position() + " to " + target_position.to_string_position() + " took: " + to_string((clock() - start) / (double)CLOCKS_PER_SEC));
 
 	if (optimal_path.size() > 1)
@@ -239,9 +241,13 @@ int PathFinder::compute_next_step_score(MapCell* source_cell, MapCell* current_c
 	return move_score;
 }
 
-int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const
+int PathFinder::compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game, bool add_burned) const
 {
-	int move_score = (int)floor(0.1 * current_cell->halite) + 10;
+	int move_score = 10;
+
+	if (add_burned)
+		move_score += (int)floor(0.1 * current_cell->halite);
+
 	int score = game.scorer.get_grid_score_move(next_cell->position);
 
 	// Only apply bad score for enemies/allies if they are very close
@@ -267,7 +273,7 @@ inline int PathFinder::heuristic(MapCell* cell, MapCell* target_cell, const Game
 	return game.get_constant("A* Heuristic") * game.game_map->calculate_distance(cell->position, target_cell->position);
 }
 
-vector<MapCell*> PathFinder::dijkstra_rtb(MapCell* source_cell, MapCell* target_cell, const Game& game) const
+vector<MapCell*> PathFinder::dijkstra_rtb(MapCell* source_cell, MapCell* target_cell, const Game& game, bool add_burned) const
 {
 	unordered_map<MapCell*, MapCell*> came_from;
 	came_from[source_cell] = source_cell;
@@ -288,7 +294,7 @@ vector<MapCell*> PathFinder::dijkstra_rtb(MapCell* source_cell, MapCell* target_
 
 		for (MapCell* next_cell : adjacent_cells)
 		{
-			int new_cost = cost_so_far[current_cell] + compute_next_step_score_rtb(source_cell, current_cell, next_cell, game);
+			int new_cost = cost_so_far[current_cell] + compute_next_step_score_rtb(source_cell, current_cell, next_cell, game, add_burned);
 
 			if ((cost_so_far.find(next_cell) == cost_so_far.end()) || (new_cost < cost_so_far[next_cell]))
 			{

@@ -253,15 +253,22 @@ void ObjectiveManager::assign_objectives(Game& game)
 	Update RETURN_TO_BASE
 	**********************
 	*/
+	double cargo_fullness;
+
 	for (const shared_ptr<Ship>& ship : game.me->my_ships)
 	{
 		if (ship->assigned)
 			continue;
 
+		if (game.switch_to_half_full_for_rtb(ship))
+			cargo_fullness = 0.5;
+		else
+			cargo_fullness = 0.9;
+
 		if (ship->is_objective(Objective_Type::BACK_TO_BASE) && game.is_shipyard_or_dropoff(ship->position))
 			ship->clear_objective();
 
-		if ((ship->is_objective(Objective_Type::BACK_TO_BASE)) || (ship->is_full(0.9)))
+		if ((ship->is_objective(Objective_Type::BACK_TO_BASE)) || (ship->is_full(cargo_fullness)))
 		{
 			game.assign_objective(ship, Objective_Type::BACK_TO_BASE, game.distance_manager.get_closest_shipyard_or_dropoff(ship));
 			ship->set_assigned();
