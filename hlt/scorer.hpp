@@ -24,11 +24,13 @@ namespace hlt
 		vector<vector<double>> grid_score_extract;
 		vector<vector<double>> grid_score_dropoff;
 		vector<vector<double>> grid_score_extract_smooth;
+		vector<vector<double>> grid_score_extract_nearby;
 		vector<vector<double>> grid_score_neighbor_cell;
 
 		vector<vector<int>> grid_score_inspiration;
 		vector<vector<int>> grid_score_inspiration_enemies;
 		vector<vector<int>> grid_score_enemies_distance_2;
+		vector<vector<int>> grid_score_enemies_distance_5;
 
 		unordered_map<PlayerId, vector<vector<double>>> grid_score_ships_nearby;
 		unordered_map<shared_ptr<Ship>, unordered_map<Position, double>> grid_ship_can_move_to_dangerous_cell;
@@ -49,12 +51,14 @@ namespace hlt
 
 			grid_score_extract = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_extract_smooth = vector<vector<double>>(height, vector<double>(width, 0.0));
+			grid_score_extract_nearby = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_neighbor_cell = vector<vector<double>>(height, vector<double>(width, 0.0));
 
 			grid_score_dropoff = vector<vector<double>>(height, vector<double>(width, 0.0));
 			grid_score_inspiration = vector<vector<int>>(height, vector<int>(width, 0));
 			grid_score_inspiration_enemies = vector<vector<int>>(height, vector<int>(width, 0));
 			grid_score_enemies_distance_2 = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_enemies_distance_5 = vector<vector<int>>(height, vector<int>(width, 0));
 
 			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
 		};
@@ -87,6 +91,7 @@ namespace hlt
 		void update_grid_score_neighbor_cell(const Game& game);
 		void update_grid_score_dropoff(const Game& game);
 		inline double get_grid_score_extract(const Position& position) const { return grid_score_extract[position.y][position.x]; }
+		inline double get_grid_score_extract_nearby(const Position& position) const { return grid_score_extract_nearby[position.y][position.x]; }
 		inline int get_grid_score_inspiration(const Position& position) const { return grid_score_inspiration[position.y][position.x]; }
 		inline int get_grid_score_inspiration_enemies(const Position& position) const { return grid_score_inspiration_enemies[position.y][position.x]; }
 		inline double get_grid_score_neighbor_cell(const Position& position) const { return grid_score_neighbor_cell[position.y][position.x]; }

@@ -373,7 +373,6 @@ namespace hlt
 			else
 				return false;
 		}
-
 		bool close_to_axis(const Position& position, int d) const
 		{
 			int width = game_map->width;
@@ -410,6 +409,15 @@ namespace hlt
 			}
 
 			return closest_ship;
+		}
+		inline bool switch_to_half_full_for_rtb(shared_ptr<Ship> ship) const
+		{
+			double limit = 23000.0 * (double)game_map->width * (double)game_map->width / 1024.0;
+
+			return is_four_player_game() &&
+				(turns_remaining_percent() <= 0.5) &&
+				(scorer.halite_total <= (int)limit) &&
+				(scorer.get_grid_score_extract_nearby(ship->position) <= 300);
 		}
 
 		void assign_objective(shared_ptr<Ship> ship, Objective_Type objective_type, const Position& position, double score = 0)

@@ -17,6 +17,7 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 		grid_score_inspiration[i][j] = 0;
 		grid_score_inspiration_enemies[i][j] = 0;
 		grid_score_enemies_distance_2[i][j] = 0;
+		grid_score_enemies_distance_5[i][j] = 0;
 	}
 
 	for (const auto& player : game.players)
@@ -38,12 +39,19 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 				if (player->id != game.my_id)
 					grid_score_enemies_distance_2[i][j] += 1;
 			}
+
+			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 5)
+			{
+				if (player->id != game.my_id)
+					grid_score_enemies_distance_5[i][j] += 1;
+			}
 		}
 	}
 
 	//log::log_vectorvector(grid_score_inspiration);
 	//log::log_vectorvector(grid_score_inspiration_enemies);
 	//log::log_vectorvector(grid_score_enemies_distance_2);
+	//log::log_vectorvector(grid_score_enemies_distance_5);
 }
 void hlt::Scorer::update_grid_score_move(const Game& game)
 {
@@ -198,6 +206,9 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				))
 				grid_score_dropoff[i][j] *= 1.3;
 
+			if (false)
+				grid_score_dropoff[i][j] *= (1.0 + 0.1 * min(max(grid_score_enemies_distance_5[i][j] - 4, 0), 8));
+
 			if (game.distance(game.get_closest_enemy_shipyard_or_dropoff(Position(j, i)), Position(j, i)) <= 2)
 				grid_score_dropoff[i][j] = 0.0;
 
@@ -221,6 +232,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 		{
 			// Initialize to 0
 			grid_score_extract_smooth[i][j] = 0.0;
+			grid_score_extract_nearby[i][j] = 0.0;
 
 			// Halite around adds to score
 			for (int k = 0; k <= radius * 2; ++k)
@@ -246,6 +258,8 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			// Any structure has 0 score
 			if (game.mapcell(Position(j, i))->has_structure())
 				grid_score_extract_smooth[i][j] = 0.0;
+
+			grid_score_extract_nearby[i][j] = grid_score_extract_smooth[i][j];
 
 			if (game.is_four_player_game() && (game.game_map->width <= 40))
 			{
@@ -276,6 +290,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 
 	//log::log_vectorvector(grid_score_extract);
 	//log::log_vectorvector(grid_score_extract_smooth);
+	//log::log_vectorvector(grid_score_extract_nearby);
 }
 void hlt::Scorer::update_grid_score_targets(const Game& game)
 {

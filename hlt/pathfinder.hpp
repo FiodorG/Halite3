@@ -43,8 +43,8 @@ namespace hlt
 		int compute_next_step_score_block(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, MapCell* enemy_base, const Game& game) const;
 
 		// Dijkstra RTB
-		vector<MapCell*> dijkstra_rtb(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
-		int compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game) const;
+		vector<MapCell*> dijkstra_rtb(MapCell* source_cell, MapCell* target_cell, const Game& game, bool add_burned) const;
+		int compute_next_step_score_rtb(MapCell* source_cell, MapCell* current_cell, MapCell* next_cell, const Game& game, bool add_burned) const;
 
 		// Dijkstra Attack
 		vector<MapCell*> dijkstra_attack(MapCell* source_cell, MapCell* target_cell, const Game& game) const;
