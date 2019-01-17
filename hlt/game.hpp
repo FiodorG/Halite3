@@ -422,7 +422,7 @@ namespace hlt
 				limit = 35000;
 				break;
 			case 48:
-				limit = 40000;
+				limit = 50000;
 				break;
 			case 56:
 				limit = 0;

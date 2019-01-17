@@ -527,12 +527,6 @@ Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const 
 	int max_i = 0, max_j = 0;
 	int turns_remaining = game.turns_remaining();
 
-	double a;
-	if (game.turns_remaining_percent() <= 0.6)
-		a = 1.0 + max((double)ship->halite - 500.0, 0.0) / 1000.0;
-	else
-		a = 1.0;
-
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 		{
@@ -541,8 +535,8 @@ Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const 
 			int distance_cell_ship = game.distance(ship->position, position);
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
-			double total_distance = (double)distance_cell_ship + a * (double)distance_cell_shipyard;
-			double total_score = halite / (1.0 + total_distance);
+			int total_distance = distance_cell_ship + distance_cell_shipyard;
+			double total_score = halite / (1.0 + (double)total_distance);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)
