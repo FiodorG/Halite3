@@ -422,13 +422,13 @@ namespace hlt
 				limit = 35000;
 				break;
 			case 48:
-				limit = 50000;
+				limit = 40000;
 				break;
 			case 56:
-				limit = 60000;
+				limit = 0;
 				break;
 			case 64:
-				limit = 70000;
+				limit = 0;
 				break;
 			default:
 				log::log("Unknown map width");

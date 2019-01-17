@@ -206,9 +206,6 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				))
 				grid_score_dropoff[i][j] *= 1.3;
 
-			if (game.is_four_player_game())
-				grid_score_dropoff[i][j] *= (1.0 + 0.1 * min(max(grid_score_enemies_distance_7[i][j] - 4, 0), 8));
-
 			if (game.distance(game.get_closest_enemy_shipyard_or_dropoff(Position(j, i)), Position(j, i)) <= 2)
 				grid_score_dropoff[i][j] = 0.0;
 
@@ -460,8 +457,6 @@ Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
-
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
 	int turns_remaining = game.turns_remaining();
@@ -528,11 +523,15 @@ Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
-
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
 	int turns_remaining = game.turns_remaining();
+
+	double a;
+	if (game.turns_remaining_percent() <= 0.6)
+		a = 1.0 + max((double)ship->halite - 500.0, 0.0) / 1000.0;
+	else
+		a = 1.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -542,8 +541,8 @@ Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const 
 			int distance_cell_ship = game.distance(ship->position, position);
 			int distance_cell_shipyard = game.distance_manager.get_distance_cell_shipyard_or_dropoff(position);
 
-			int total_distance = distance_cell_ship + distance_cell_shipyard;
-			double total_score = halite / (1.0 + (double)total_distance);
+			double total_distance = (double)distance_cell_ship + a * (double)distance_cell_shipyard;
+			double total_score = halite / (1.0 + total_distance);
 
 			// Cannot go to objectives further than turns remaining
 			if ((int)(1.5 * total_distance) >= turns_remaining)
