@@ -188,9 +188,9 @@ namespace hlt
 		inline MapCell* mapcell(const Position& position) const { return game_map->at(position); }
 		inline MapCell* mapcell(shared_ptr<Ship> ship) const { return game_map->at(ship->position); }
 		inline MapCell* mapcell(int x, int y) const { return game_map->at(y, x); }
-		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
-		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
-		bool enemy_dropoff_in_cell(const Position& position) const { return game_map->at(position)->has_structure() && (game_map->at(position)->structure->owner != my_id); }
+		inline bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
+		inline bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
+		inline bool enemy_dropoff_in_cell(const Position& position) const { return game_map->at(position)->has_structure() && (game_map->at(position)->structure->owner != my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
 		{
 			return
@@ -200,9 +200,9 @@ namespace hlt
 				game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id) ||
 				game_map->at(position)->is_occupied_by_enemy(my_id);
 		}
-		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
-		int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
-		bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
+		inline bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
+		inline int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
+		inline bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
 		inline shared_ptr<Ship> ship_on_position(const Position& position) const { return mapcell(position)->ship; }
 		PlayerId playerid_on_position(const Position& position) const { return mapcell(position)->ship->owner; }
 		vector<shared_ptr<Ship>> enemies_adjacent_to_position(const Position& position) const
@@ -425,10 +425,10 @@ namespace hlt
 				limit = 50000;
 				break;
 			case 56:
-				limit = 0;
+				limit = 60000;
 				break;
 			case 64:
-				limit = 0;
+				limit = 70000;
 				break;
 			default:
 				log::log("Unknown map width");

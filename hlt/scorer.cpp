@@ -139,10 +139,19 @@ void hlt::Scorer::update_grid_score_enemies(const Game& game)
 				for (int j = 0; j < width; ++j)
 				{
 					int distance = game.distance(ship_iterator.second->position, Position(j, i));
-					grid_score_enemies[i][j] = max(grid_score_enemies[i][j], (4.0 - (double)distance) / 4.0);
+
+					if (distance <= 4)
+						grid_score_enemies[i][j] = max(grid_score_enemies[i][j], (4.0 - (double)distance) / 4.0);
 				}
 		}
 	}
+
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+		{
+			if (game.enemy_in_cell(Position(j, i)))
+				grid_score_enemies[i][j] = 0.0;
+		}
 
 	//log::log("grid_score_enemies");
 	//log::log_vectorvector(grid_score_enemies);
