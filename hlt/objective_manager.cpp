@@ -23,7 +23,7 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = (game.players.size() == 2) ? 5 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 8 : 6;
+		max_dropoffs = (game.players.size() == 2) ? 8 : 7;
 		break;
 	default:
 		log::log("Unknown map width");

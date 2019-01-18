@@ -55,7 +55,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 				d_halite *= 3;
 
 			cargo += d_halite;
-			score += ((double)d_halite + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves);
+			score += ((double)d_halite * (1.0 + 0.3 * game.scorer.get_grid_score_enemies(current_position)) + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves);
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
@@ -65,7 +65,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			int score_move = game.scorer.get_grid_score_move(current_position);
 			int current_distance = game.distance(initial_position, current_position);
 
-			if ((score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 800.0))
+			if (four_player_game && (score_move == 10) && (current_distance <= 2) && (game.scorer.get_score_ship_can_move_to_dangerous_cell(ship, current_position) > 600.0))
 			{
 				cargo -= halite_to_burn;
 				score -= halite_to_burn * pow(0.9, moves);

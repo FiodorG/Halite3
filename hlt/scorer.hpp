@@ -67,7 +67,7 @@ namespace hlt
 		{
 			Stopwatch s("Updating grids");
 			update_grid_score_move(game); // no dep
-			//update_grid_score_enemies(game); // no dep
+			update_grid_score_enemies(game); // no dep
 			update_grid_score_inspiration(game); // no dep
 			update_grid_score_neighbor_cell(game); // no dep
 			update_grid_score_extract(game); // depend on grid_score_inspiration
