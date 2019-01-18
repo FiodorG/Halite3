@@ -54,8 +54,10 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 			if (inspiration >= 2)
 				d_halite *= 3;
 
+			double bonus = four_player_game ? (1.0 + 0.3 * game.scorer.get_grid_score_enemies(current_position)) : 1.0;
+
 			cargo += d_halite;
-			score += ((double)d_halite * (1.0 + 0.3 * game.scorer.get_grid_score_enemies(current_position)) + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves);
+			score += ((double)d_halite * bonus + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(0.9, moves);
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
