@@ -322,7 +322,7 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 					if (game.position_has_ship(current_position))
 					{
 						PlayerId playerid = game.ship_on_position(current_position)->owner;
-						grid_score_ships_nearby[playerid][i][j] += max(900.0 - (double)game.mapcell(current_position)->ship->halite, 0.0) / max(1.0, (double)distance);
+						grid_score_ships_nearby[playerid][i][j] += max(900.0 - (double)game.mapcell(current_position)->ship->halite, 0.0) / max(1.0, (double)distance) / max(1.0, (double)distance);
 					}
 				}
 		}
@@ -423,11 +423,11 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	//int inspiration_ally = (game.scorer.get_grid_score_inspiration(position_to_score) >= 3) ? 3 : 1;
 	//int inspiration_enemy = (game.scorer.get_grid_score_inspiration_enemies(position_to_score) >= 3) ? 3 : 1;
 
-	//int distance_ally = game.distance(my_ship->position, position_to_score);
-	//int distance_enemy = game.distance(enemy_ship->position, position_to_score);
+	int distance_ally = game.distance(my_ship->position, position_to_score);
+	int distance_enemy = game.distance(enemy_ship->position, position_to_score);
 
-	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0), 0.0);
-	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0), 0.0);
+	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0) / max(1.0, (double)distance_ally) / max(1.0, (double)distance_ally), 0.0);
+	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0) / max(1.0, (double)distance_enemy) / max(1.0, (double)distance_enemy), 0.0);
 
 	double proba_of_me_getting_back = (score_attack_allies_nearby + score_attack_enemies_nearby > 0.0) ? score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby) : 0.0;
 
