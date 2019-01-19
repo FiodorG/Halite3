@@ -30,7 +30,7 @@ namespace hlt
 		vector<vector<int>> grid_score_inspiration;
 		vector<vector<int>> grid_score_inspiration_enemies;
 		vector<vector<int>> grid_score_enemies_distance_2;
-		vector<vector<int>> grid_score_enemies_distance_7;
+		vector<vector<int>> grid_score_enemies_distance_5;
 
 		unordered_map<PlayerId, vector<vector<double>>> grid_score_ships_nearby;
 		unordered_map<shared_ptr<Ship>, unordered_map<Position, double>> grid_ship_can_move_to_dangerous_cell;
@@ -58,7 +58,7 @@ namespace hlt
 			grid_score_inspiration = vector<vector<int>>(height, vector<int>(width, 0));
 			grid_score_inspiration_enemies = vector<vector<int>>(height, vector<int>(width, 0));
 			grid_score_enemies_distance_2 = vector<vector<int>>(height, vector<int>(width, 0));
-			grid_score_enemies_distance_7 = vector<vector<int>>(height, vector<int>(width, 0));
+			grid_score_enemies_distance_5 = vector<vector<int>>(height, vector<int>(width, 0));
 
 			grid_score_can_stay_still = vector<vector<double>>(height, vector<double>(width, 0.0));
 		};
@@ -67,7 +67,7 @@ namespace hlt
 		{
 			Stopwatch s("Updating grids");
 			update_grid_score_move(game); // no dep
-			update_grid_score_enemies(game); // no dep
+			//update_grid_score_enemies(game); // no dep
 			update_grid_score_inspiration(game); // no dep
 			update_grid_score_neighbor_cell(game); // no dep
 			update_grid_score_extract(game); // depend on grid_score_inspiration
