@@ -17,7 +17,7 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 		grid_score_inspiration[i][j] = 0;
 		grid_score_inspiration_enemies[i][j] = 0;
 		grid_score_enemies_distance_2[i][j] = 0;
-		grid_score_enemies_distance_7[i][j] = 0;
+		grid_score_enemies_distance_5[i][j] = 0;
 	}
 
 	for (const auto& player : game.players)
@@ -40,10 +40,10 @@ void hlt::Scorer::update_grid_score_inspiration(const Game& game)
 					grid_score_enemies_distance_2[i][j] += 1;
 			}
 
-			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 7)
+			if (game.distance(ship_iterator.second->position, Position(j, i)) <= 5)
 			{
 				if (player->id != game.my_id)
-					grid_score_enemies_distance_7[i][j] += 1;
+					grid_score_enemies_distance_5[i][j] += 1;
 			}
 		}
 	}
@@ -139,19 +139,10 @@ void hlt::Scorer::update_grid_score_enemies(const Game& game)
 				for (int j = 0; j < width; ++j)
 				{
 					int distance = game.distance(ship_iterator.second->position, Position(j, i));
-
-					if (distance <= 4)
-						grid_score_enemies[i][j] = max(grid_score_enemies[i][j], (4.0 - (double)distance) / 4.0);
+					grid_score_enemies[i][j] = max(grid_score_enemies[i][j], (4.0 - (double)distance) / 4.0);
 				}
 		}
 	}
-
-	for (int i = 0; i < height; ++i)
-		for (int j = 0; j < width; ++j)
-		{
-			if (game.enemy_in_cell(Position(j, i)))
-				grid_score_enemies[i][j] = 0.0;
-		}
 
 	//log::log("grid_score_enemies");
 	//log::log_vectorvector(grid_score_enemies);
