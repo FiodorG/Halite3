@@ -20,10 +20,10 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 		max_dropoffs = (game.players.size() == 2) ? 4 : 3;
 		break;
 	case 56:
-		max_dropoffs = (game.players.size() == 2) ? 5 : 4;
+		max_dropoffs = (game.players.size() == 2) ? 5 : 3;
 		break;
 	case 64:
-		max_dropoffs = (game.players.size() == 2) ? 8 : 7;
+		max_dropoffs = (game.players.size() == 2) ? 8 : 6;
 		break;
 	default:
 		log::log("Unknown map width");
@@ -109,7 +109,7 @@ bool ObjectiveManager::should_spawn_dropoff(const Game& game, vector<Objective> 
 		return false;
 
 	if (game.my_dropoff_number() == 0)
-		return (game.my_ships_number() >= (game.is_four_player_game() && (game.game_map->width <= 40)) ? 13 : 15);
+		return (game.my_ships_number() >= 15);
 	else if (game.my_dropoff_number() == 1)
 		return (game.my_ships_number() >= 30);
 	else if (game.my_dropoff_number() == 2)
@@ -196,8 +196,6 @@ void ObjectiveManager::assign_objectives(Game& game)
 					(ship->is_objective(Objective_Type::BLOCK_ENEMY_BASE) && (ship->halite < 400)) ||
 					// capture ships to blockade
 					((ship->halite < 40) && (2 * game.distance(ship->position, game.get_closest_enemy_shipyard_or_dropoff(ship)) >= game.turns_remaining())) ||
-					// also do when no halite left
-					(game.get_constant("Test") && (ship->halite < 40) && (game.scorer.halite_total < 5000)) ||
 					// convert ships to blockade from suicide if low halite
 					(ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && (ship->halite < 40))
 				)
