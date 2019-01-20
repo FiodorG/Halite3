@@ -322,15 +322,7 @@ void hlt::Scorer::update_grid_score_targets(const Game& game)
 					if (game.position_has_ship(current_position))
 					{
 						PlayerId playerid = game.ship_on_position(current_position)->owner;
-
-						if (game.is_four_player_game())
-						{
-							grid_score_ships_nearby[playerid][i][j] += max(900.0 - (double)game.mapcell(current_position)->ship->halite, 0.0) / max(1.0, (double)distance) / max(1.0, (double)distance);
-						}
-						else
-						{
-							grid_score_ships_nearby[playerid][i][j] += max(900.0 - (double)game.mapcell(current_position)->ship->halite, 0.0) / max(1.0, (double)distance);
-						}
+						grid_score_ships_nearby[playerid][i][j] += max(900.0 - (double)game.mapcell(current_position)->ship->halite, 0.0) / max(1.0, (double)distance);
 					}
 				}
 		}
@@ -347,7 +339,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? -400.0 : 0.0;
+	double score_bump = game.is_two_player_game() ? -400.0 : 300.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -431,22 +423,12 @@ double Scorer::combat_score(shared_ptr<Ship> my_ship, shared_ptr<Ship> enemy_shi
 	//int inspiration_ally = (game.scorer.get_grid_score_inspiration(position_to_score) >= 3) ? 3 : 1;
 	//int inspiration_enemy = (game.scorer.get_grid_score_inspiration_enemies(position_to_score) >= 3) ? 3 : 1;
 
-	int distance_ally = game.distance(my_ship->position, position_to_score);
-	int distance_enemy = game.distance(enemy_ship->position, position_to_score);
+	//int distance_ally = game.distance(my_ship->position, position_to_score);
+	//int distance_enemy = game.distance(enemy_ship->position, position_to_score);
 
-	double score_attack_allies_nearby;
-	double score_attack_enemies_nearby;
-	if (game.is_four_player_game())
-	{
-		score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0) / max(1.0, (double)distance_ally) / max(1.0, (double)distance_ally), 0.0);
-		score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0) / max(1.0, (double)distance_enemy) / max(1.0, (double)distance_enemy), 0.0);
-	}
-	else
-	{
-		score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0), 0.0);
-		score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0), 0.0);
-	}
-	
+	double score_attack_allies_nearby = max(get_grid_score_ships_nearby(my_ship->owner, position_to_score) - max(900.0 - halite_ally, 0.0), 0.0);
+	double score_attack_enemies_nearby = max(get_grid_score_ships_nearby(enemy_ship->owner, position_to_score) - max(900.0 - halite_enemy, 0.0), 0.0);
+
 	double proba_of_me_getting_back = (score_attack_allies_nearby + score_attack_enemies_nearby > 0.0) ? score_attack_allies_nearby / (score_attack_allies_nearby + score_attack_enemies_nearby) : 0.0;
 
 	// do not attack on enemy dropoffs
@@ -500,7 +482,7 @@ Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const 
 				)
 			{
 				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-				double total_score_attack = 2.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double total_score_attack = 1.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
@@ -601,7 +583,7 @@ pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> 
 			for (Position& shipyard_or_dropoff : dropoffs)
 				distance = min(game.distance(shipyard_or_dropoff, Position(j, i)), distance);
 			
-			total_score[i][j] = grid_score_dropoff[i][j] * butterfly(distance, 7, 16, 32, 0.0, 1.0, 0.0);
+			total_score[i][j] = grid_score_dropoff[i][j] * butterfly(distance, 6, 14, 32, 0.0, 1.0, 0.0);
 
 			if (total_score[i][j] > max_score)
 			{
