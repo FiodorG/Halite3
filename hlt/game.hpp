@@ -141,7 +141,7 @@ namespace hlt
 			else
 			{
 				if (
-					turns_remaining_percent() >= 0.40 &&
+					turns_remaining_percent() >= 0.37 &&
 					me->halite - reserved_halite >= constants::SHIP_COST &&
 					!position_occupied_next_turn(my_shipyard_position()) &&
 					my_ships_number() <= max_allowed_ships() &&
