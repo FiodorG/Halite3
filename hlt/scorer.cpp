@@ -233,6 +233,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			// Initialize to 0
 			grid_score_extract_smooth[i][j] = 0.0;
 			grid_score_extract_nearby[i][j] = 0.0;
+			grid_score_extract[i][j] = 0.0;
 
 			// Halite around adds to score
 			for (int k = 0; k <= radius * 2; ++k)
@@ -281,7 +282,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			}
 
 			grid_score_extract_smooth[i][j] *= pow(0.9, max(grid_score_enemies_distance_2[i][j] - 4, 0));
-			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite + (game.turns_remaining_percent <= 0.33) ? grid_score_neighbor_cell[i][j] : 0.0;
+			grid_score_extract[i][j] = (double)game.mapcell(Position(j, i))->halite + ((game.turns_remaining_percent() <= 0.33) ? grid_score_neighbor_cell[i][j] : 0.0);
 		}
 
 	//log::log_vectorvector(grid_score_extract);
