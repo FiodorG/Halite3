@@ -164,7 +164,7 @@ namespace hlt
 			}
 			else if (players.size() == 4)
 			{
-				max_allowed_ships = min(150, (int)(20.0 + 0.00015 * (double)scorer.halite_initial));
+				max_allowed_ships = min(150, (int)(23.0 + 0.0001 * (double)scorer.halite_initial));
 
 				//if (game_map->width == 32)
 				//	max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
