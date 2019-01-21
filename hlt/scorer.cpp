@@ -206,9 +206,6 @@ void hlt::Scorer::update_grid_score_dropoff(const Game& game)
 				))
 				grid_score_dropoff[i][j] *= 1.3;
 
-			if (false)
-				grid_score_dropoff[i][j] *= (1.0 + 0.1 * min(max(grid_score_enemies_distance_5[i][j] - 4, 0), 8));
-
 			if (game.distance(game.get_closest_enemy_shipyard_or_dropoff(Position(j, i)), Position(j, i)) <= 2)
 				grid_score_dropoff[i][j] = 0.0;
 
@@ -241,10 +238,6 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 					int new_k = (((i - radius + k) % width) + width) % width;
 					int new_l = (((j - radius + l) % height) + height) % height;
 					double halite = (double)game.mapcell(new_k, new_l)->halite;
-
-					// Weight down small halite cells
-					if (halite < 100)
-						halite = halite * halite / 100.0;
 
 					// Add bonus for inspiration
 					if (grid_score_inspiration[new_k][new_l] >= 2)
@@ -342,7 +335,7 @@ void hlt::Scorer::update_grid_score_can_stay_still(const Game& game)
 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	double score_bump = game.is_two_player_game() ? -400.0 : 0.0;
+	double score_bump = game.is_two_player_game() ? -400.0 : 300.0;
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -460,8 +453,6 @@ Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const 
 	int width = game.game_map->width;
 	int height = game.game_map->height;
 
-	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
-
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
 	int turns_remaining = game.turns_remaining();
@@ -487,7 +478,7 @@ Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const 
 				)
 			{
 				double score_combat = combat_score(ship, game.ship_on_position(position), position, game);
-				double total_score_attack = 2.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
+				double total_score_attack = 1.0 * max(score_combat, 0.0) / max(1.0, (double)distance_cell_ship);
 
 				if (total_score_attack > total_score)
 				{
@@ -527,8 +518,6 @@ Objective hlt::Scorer::find_best_objective_cell_4p(shared_ptr<Ship> ship, const 
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-
-	//vector<vector<double>> total_score = vector<vector<double>>(height, vector<double>(width, 0.0));
 
 	double max_score = -DBL_MAX;
 	int max_i = 0, max_j = 0;
@@ -590,7 +579,7 @@ pair<MapCell*, double> hlt::Scorer::find_best_dropoff_cell(shared_ptr<Shipyard> 
 			for (Position& shipyard_or_dropoff : dropoffs)
 				distance = min(game.distance(shipyard_or_dropoff, Position(j, i)), distance);
 			
-			total_score[i][j] = grid_score_dropoff[i][j] * butterfly(distance, 7, 16, 32, 0.0, 1.0, 0.0);
+			total_score[i][j] = grid_score_dropoff[i][j] * butterfly(distance, 6, 14, 32, 0.0, 1.0, 0.0);
 
 			if (total_score[i][j] > max_score)
 			{

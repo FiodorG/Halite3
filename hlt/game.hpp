@@ -164,13 +164,13 @@ namespace hlt
 			}
 			else if (players.size() == 4)
 			{
-				max_allowed_ships = min(150, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
+				max_allowed_ships = min(150, (int)(20.0 + 0.00015 * (double)scorer.halite_initial));
 
-				if (game_map->width == 32)
-					max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
+				//if (game_map->width == 32)
+				//	max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
 
-				if (game_map->width == 40)
-					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
+				//if (game_map->width == 40)
+				//	max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
 			} 
 			else
 			{
@@ -188,9 +188,9 @@ namespace hlt
 		inline MapCell* mapcell(const Position& position) const { return game_map->at(position); }
 		inline MapCell* mapcell(shared_ptr<Ship> ship) const { return game_map->at(ship->position); }
 		inline MapCell* mapcell(int x, int y) const { return game_map->at(y, x); }
-		bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
-		bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
-		bool enemy_dropoff_in_cell(const Position& position) const { return game_map->at(position)->has_structure() && (game_map->at(position)->structure->owner != my_id); }
+		inline bool enemy_in_cell(const MapCell& cell) const { return cell.is_occupied_by_enemy(my_id); }
+		inline bool enemy_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_enemy(my_id); }
+		inline bool enemy_dropoff_in_cell(const Position& position) const { return game_map->at(position)->has_structure() && (game_map->at(position)->structure->owner != my_id); }
 		bool enemy_in_adjacent_cell(const Position& position) const
 		{
 			return
@@ -200,9 +200,9 @@ namespace hlt
 				game_map->at(game_map->directional_offset(position, Direction::WEST))->is_occupied_by_enemy(my_id) ||
 				game_map->at(position)->is_occupied_by_enemy(my_id);
 		}
-		bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
-		int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
-		bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
+		inline bool ally_in_cell(const Position& position) const { return game_map->at(position)->is_occupied_by_ally(my_id); }
+		inline int halite_on_position(const Position& position) const { return mapcell(position)->halite; }
+		inline bool position_has_ship(const Position& position) const { return mapcell(position)->is_occupied(); }
 		inline shared_ptr<Ship> ship_on_position(const Position& position) const { return mapcell(position)->ship; }
 		PlayerId playerid_on_position(const Position& position) const { return mapcell(position)->ship->owner; }
 		vector<shared_ptr<Ship>> enemies_adjacent_to_position(const Position& position) const

@@ -52,6 +52,8 @@ void hlt::Game::ready(const std::string& name, unsigned int rng_seed)
 
 void hlt::Game::update_frame() 
 {
+	Stopwatch s("Update Frame");
+
 	start = clock();
     hlt::get_sstream() >> turn_number;
     log::log("=============== TURN " + std::to_string(turn_number) + " ================");
