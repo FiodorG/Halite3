@@ -141,7 +141,7 @@ namespace hlt
 			else
 			{
 				if (
-					turns_remaining_percent() >= 0.33 &&
+					turns_remaining_percent() >= 0.40 &&
 					me->halite - reserved_halite >= constants::SHIP_COST &&
 					!position_occupied_next_turn(my_shipyard_position()) &&
 					my_ships_number() <= max_allowed_ships() &&
@@ -164,13 +164,13 @@ namespace hlt
 			}
 			else if (players.size() == 4)
 			{
-				max_allowed_ships = min(150, (int)(23.0 + 0.0001 * (double)scorer.halite_initial));
+				max_allowed_ships = min(150, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
 
-				//if (game_map->width == 32)
-				//	max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
+				if (game_map->width == 32)
+					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
 
-				//if (game_map->width == 40)
-				//	max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
+				if (game_map->width == 40)
+					max_allowed_ships = (int)(0.95 * max_allowed_ships) + 1;
 			} 
 			else
 			{
