@@ -34,40 +34,40 @@ int ObjectiveManager::max_allowed_dropoffs(const Game& game) const
 
 	if (game.is_four_player_game())
 	{
-		if (game.scorer.halite_initial <= 150000)
+		if (game.scorer.halite_initial <= 120000)
 			base_dropoffs = 0;
 		else if (game.scorer.halite_initial <= 250000)
 			base_dropoffs = 1;
 		else if (game.scorer.halite_initial <= 400000)
 			base_dropoffs = 2;
-		else if (game.scorer.halite_initial <= 600000)
+		else if (game.scorer.halite_initial <= 550000)
 			base_dropoffs = 3;
-		else if (game.scorer.halite_initial <= 800000)
+		else if (game.scorer.halite_initial <= 700000)
 			base_dropoffs = 4;
-		else if (game.scorer.halite_initial <= 1000000)
+		else if (game.scorer.halite_initial <= 850000)
 			base_dropoffs = 5;
-		else if (game.scorer.halite_initial <= 1200000)
+		else if (game.scorer.halite_initial <= 1000000)
 			base_dropoffs = 6;
 		else
 			base_dropoffs = 7;
 	}
 	else
 	{
-		if (game.scorer.halite_initial <= 120000)
+		if (game.scorer.halite_initial <= 100000)
 			base_dropoffs = 0;
-		else if (game.scorer.halite_initial <= 240000)
+		else if (game.scorer.halite_initial <= 200000)
 			base_dropoffs = 1;
-		else if (game.scorer.halite_initial <= 360000)
+		else if (game.scorer.halite_initial <= 300000)
 			base_dropoffs = 2;
-		else if (game.scorer.halite_initial <= 480000)
+		else if (game.scorer.halite_initial <= 400000)
 			base_dropoffs = 3;
-		else if (game.scorer.halite_initial <= 600000)
+		else if (game.scorer.halite_initial <= 500000)
 			base_dropoffs = 4;
-		else if (game.scorer.halite_initial <= 720000)
+		else if (game.scorer.halite_initial <= 600000)
 			base_dropoffs = 5;
-		else if (game.scorer.halite_initial <= 840000)
+		else if (game.scorer.halite_initial <= 700000)
 			base_dropoffs = 6;
-		else if (game.scorer.halite_initial <= 960000)
+		else if (game.scorer.halite_initial <= 800000)
 			base_dropoffs = 7;
 		else
 			base_dropoffs = 8;
