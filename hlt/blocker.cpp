@@ -55,7 +55,7 @@ void Blocker::fill_positions_to_block_scores(const Game& game)
 {
 	positions_to_block_scores.clear();
 
-	PlayerId player_with_most_halite;
+	PlayerId player_with_most_halite = game.my_id;
 	if (game.turns_remaining() >= 60)
 	{
 		int max_halite = -999999;
