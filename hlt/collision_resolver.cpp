@@ -84,7 +84,17 @@ bool CollisionResolver::collision_one_ship_escaping(vector<shared_ptr<Ship>> col
 		(game.scorer.get_grid_score_can_stay_still(collisions_ordered[1]->position) <= escape_score)));
 }
 
-void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
+bool CollisionResolver::collision_one_ship_rtb(vector<shared_ptr<Ship>> collisions_ordered, Game& game)
+{
+	return (
+		(collisions_ordered.size() == 2) &&
+		(
+		(collisions_ordered[0]->is_objective(Objective_Type::BACK_TO_BASE) && !collisions_ordered[1]->is_objective(Objective_Type::BACK_TO_BASE)) ||
+		(collisions_ordered[1]->is_objective(Objective_Type::BACK_TO_BASE) && !collisions_ordered[0]->is_objective(Objective_Type::BACK_TO_BASE))
+	));
+}
+
+bool CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
 {
 	shared_ptr<Ship> ship1 = collisions_ordered[0];
 	shared_ptr<Ship> ship2 = collisions_ordered[1];
@@ -125,7 +135,7 @@ void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<share
 		}
 	}
 	else // no one escaping
-		return;
+		return false;
 
 	// try to find best place for moving ship to go
 	vector<double> scores = { -99999999.0 }; // to reach 10m around -200 score
@@ -147,6 +157,9 @@ void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<share
 	int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
 	Position best_position = positions[best_score_index];
 
+	if (best_position == ship_to_move->position)
+		return false;
+
 	game.update_ship_target_position(ship_to_move, best_position);
 	log::log("Collision on escape:");
 	log::log("Collision from fleeing detected " + ship1->to_string_ship() + " and " + ship2->to_string_ship());
@@ -157,6 +170,60 @@ void CollisionResolver::resolve_collisions_one_ship_escaping(unordered_map<share
 		log::log(positions[i].to_string_position() + " with score " + to_string(scores[i]));
 
 	log::log("End Collision on escape");
+
+	return true;
+}
+
+bool CollisionResolver::resolve_collisions_one_ship_rtb(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game)
+{
+	shared_ptr<Ship> ship1 = collisions_ordered[0];
+	shared_ptr<Ship> ship2 = collisions_ordered[1];
+
+	shared_ptr<Ship> ship_to_move;
+	if (ship1->is_objective(Objective_Type::BACK_TO_BASE))
+		ship_to_move = ship2;
+	else if (ship2->is_objective(Objective_Type::BACK_TO_BASE))
+		ship_to_move = ship1;
+	else
+		return false;
+
+	if (!game.ship_can_move(ship_to_move))
+		return false;
+
+	// try to find best place for moving ship to go
+	vector<double> scores = { -99999999.0 }; // to reach 10m around -200 score
+	vector<Position> positions = { ship_to_move->position };
+
+	for (auto& position : game.adjacent_positions_to_position(ship_to_move->position))
+	{
+		if (position_collides_with_existing(ship_to_move, position, game))
+			continue;
+
+		if (position == collisions[ship_to_move])
+			continue;
+
+		vector<Direction> path = { game.game_map->get_move(ship_to_move->position, position) };
+		scores.push_back(game.move_solver.score_path(ship_to_move, path, game));
+		positions.push_back(position);
+	}
+
+	int best_score_index = distance(scores.begin(), max_element(scores.begin(), scores.end()));
+	Position best_position = positions[best_score_index];
+
+	if (best_position == ship_to_move->position)
+		return false;
+
+	game.update_ship_target_position(ship_to_move, best_position);
+	log::log("Collision on rtb:");
+	log::log("Collision from rtb detected " + ship1->to_string_ship() + " and " + ship2->to_string_ship());
+	log::log(ship_to_move->to_string_ship() + " is moving to " + best_position.to_string_position() + " with score " + to_string(scores[best_score_index]));
+
+	for (size_t i = 0; i < scores.size(); i++)
+		log::log(positions[i].to_string_position() + " with score " + to_string(scores[i]));
+
+	log::log("End Collision on rtb");
+
+	return true;
 }
 
 void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position> collisions, Game& game)
@@ -176,8 +243,18 @@ void CollisionResolver::edit_collisions(unordered_map<shared_ptr<Ship>, Position
 
 	if (collision_one_ship_escaping(collisions_ordered, game))
 	{
-		resolve_collisions_one_ship_escaping(collisions, collisions_ordered, game);
-		return;
+		bool success = resolve_collisions_one_ship_escaping(collisions, collisions_ordered, game);
+
+		if (success)
+			return;
+	}
+
+	if (collision_one_ship_rtb(collisions_ordered, game))
+	{
+		bool success = resolve_collisions_one_ship_rtb(collisions, collisions_ordered, game);
+		
+		if (success)
+			return;
 	}
 
 	for (auto& ship : collisions_ordered)

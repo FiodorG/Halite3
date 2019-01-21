@@ -13,7 +13,7 @@ void DistanceManager::fill_closest_shipyard_or_dropoff(const Game& game)
 {
 	int width = game.game_map->width;
 	int height = game.game_map->height;
-	int radius = 4;
+	int radius = 3;
 
 	// gather dropoffs
 	vector<Position> base_or_dropoffs;
@@ -47,7 +47,7 @@ void DistanceManager::fill_closest_shipyard_or_dropoff(const Game& game)
 			{
 				double distance = (double)game.distance(position, dropoff);
 				
-				distance *= pow(1.1, max(enemies_around[dropoff] - 3, 0));
+				distance *= pow(1.1, max(enemies_around[dropoff] - 4, 0));
 
 				if (enemies_around[dropoff] >= 10)
 					distance = 9999999.0;
