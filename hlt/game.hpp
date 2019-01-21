@@ -167,10 +167,10 @@ namespace hlt
 				max_allowed_ships = min(150, (int)(20.0 + 0.0001 * (double)scorer.halite_initial));
 
 				if (game_map->width == 32)
-					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
+					max_allowed_ships = (int)(0.8 * max_allowed_ships) + 1;
 
 				if (game_map->width == 40)
-					max_allowed_ships = (int)(0.95 * max_allowed_ships) + 1;
+					max_allowed_ships = (int)(0.9 * max_allowed_ships) + 1;
 			} 
 			else
 			{
@@ -348,6 +348,7 @@ namespace hlt
 		}
 		Position get_closest_enemy_shipyard_or_dropoff(shared_ptr<Ship> ship) const { return get_closest_enemy_shipyard_or_dropoff(ship->position); }
 		bool is_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->is_shipyard_or_dropoff(my_id); }
+		bool is_any_shipyard_or_dropoff(const Position& position) const { return mapcell(position)->has_structure(); }
 		bool position_occupied_next_turn(const Position& position) const
 		{
 			for (auto& ship_position : positions_next_turn)

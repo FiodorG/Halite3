@@ -25,7 +25,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	bool can_attack = can_attack_4p; // || can_attack_2p;
 	int turn = 0;
 	double score = 0.0;
-	double discount = 0.7;
+	double discount = 0.8;
 
 	unordered_map<Position, int> visited_positions;
 
@@ -40,7 +40,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
-			visited_positions[current_position] = game.mapcell(current_position)->halite;
+			visited_positions[current_position] = game.scorer.get_grid_score_extract(current_position);
 
 		int halite = visited_positions[current_position];
 		int halite_to_burn = (int)floor(0.1 * halite);
@@ -56,7 +56,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 				d_halite *= 3;
 
 			cargo += d_halite;
-			score += ((double)d_halite + game.scorer.get_grid_score_neighbor_cell(current_position)) * pow(discount, moves);
+			score += (double)d_halite * pow(discount, moves);
 		}
 		// Try to move to next cell
 		else if (cargo >= halite_to_burn)
