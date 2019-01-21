@@ -116,6 +116,9 @@ void hlt::Scorer::update_grid_score_neighbor_cell(const Game& game)
 					if ((distance <= radius) && (halite > 500))
 						grid_score_neighbor_cell[i][j] += halite * 0.1 / (1.0 + distance);
 				}
+
+			if (game.is_any_shipyard_or_dropoff(Position(j, i)))
+				grid_score_neighbor_cell[i][j] = 0.0;
 		}
 
 	//log::log_vectorvector(grid_score_neighbor_cell);
@@ -254,7 +257,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 
 			grid_score_extract_nearby[i][j] = grid_score_extract_smooth[i][j];
 
-			if (game.is_four_player_game() && (game.game_map->width <= 40))
+			if (game.is_four_player_game() && (game.game_map->width <= 48))
 			{
 				int distance_inf_from_shipyard = game.game_map->calculate_distance_inf(Position(j, i), game.my_shipyard_position());
 				int base_to_axis = width / 4;
@@ -278,7 +281,7 @@ void hlt::Scorer::update_grid_score_extract(const Game& game)
 			}
 
 			grid_score_extract_smooth[i][j] *= pow(0.9, max(grid_score_enemies_distance_2[i][j] - 4, 0));
-			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite;
+			grid_score_extract[i][j] = (double)game.mapcell(i, j)->halite + (game.turns_remaining_percent <= 0.33) ? grid_score_neighbor_cell[i][j] : 0.0;
 		}
 
 	//log::log_vectorvector(grid_score_extract);
@@ -609,7 +612,7 @@ void hlt::Scorer::decreases_score_in_target_area(shared_ptr<Ship> ship, const Po
 	int radius = 4;
 	int area = 2 * radius * radius + 2 * radius + 1;
 
-	double remove_multiplier = 15;
+	double remove_multiplier = 15.0;
 
 	double halite_to_decrease = max((double)ship->missing_halite(), 300.0) / (double)area * remove_multiplier;
 	// add max here?
