@@ -40,7 +40,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	for (Direction direction : path)
 	{
 		if (!visited_positions.count(current_position))
-			visited_positions[current_position] = game.scorer.get_grid_score_extract(current_position);
+			visited_positions[current_position] = (int)game.scorer.get_grid_score_extract(current_position);
 
 		int halite = visited_positions[current_position];
 		int halite_to_burn = (int)floor(0.1 * halite);
