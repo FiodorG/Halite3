@@ -199,7 +199,7 @@ void ObjectiveManager::assign_objectives(Game& game)
 					// capture ships to blockade
 					((ship->halite < 50) && (2 * game.distance(ship->position, game.get_closest_enemy_shipyard_or_dropoff(ship)) >= game.turns_remaining())) ||
 					// also do when no halite left
-					(game.get_constant("Test") && (ship->halite < 50) && (game.turns_remaining() <= 60) && (game.scorer.halite_total < 2000)) ||
+					((ship->halite < 50) && (game.turns_remaining() <= 60) && (game.scorer.halite_total < 2000)) ||
 					// convert ships to blockade from suicide if low halite
 					(ship->is_objective(Objective_Type::SUICIDE_ON_BASE) && (ship->halite < 40))
 				)
