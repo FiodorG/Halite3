@@ -55,7 +55,44 @@ void Blocker::fill_positions_to_block_scores(const Game& game)
 {
 	positions_to_block_scores.clear();
 
-	for (auto& enemy_base : game.enemy_shipyard_or_dropoff_positions())
+	PlayerId player_with_most_halite;
+	if (game.turns_remaining() >= 60)
+	{
+		int max_halite = -999999;
+		for (const auto& player : game.players)
+		{
+			if (player->id == game.my_id)
+				continue;
+
+			int player_halite = 0;
+			for (auto& ship : player->ships)
+				player_halite += ship.second->halite;
+
+			if (player_halite >= max_halite)
+			{
+				player_with_most_halite = player->id;
+				max_halite = player_halite;
+			}
+		}
+
+		player_to_block = player_with_most_halite;
+		log::log("Chosen player for block: " + to_string(player_to_block));
+	}
+	else
+		player_with_most_halite = player_to_block;
+
+	vector<Position> enemy_shipyard_or_dropoff_positions;
+	for (const auto& player : game.players)
+	{
+		if (player->id != player_with_most_halite)
+			continue;
+
+		enemy_shipyard_or_dropoff_positions.push_back(player->shipyard->position);
+		for (auto& dropoff : player->dropoffs)
+			enemy_shipyard_or_dropoff_positions.push_back(dropoff.second->position);
+	}
+
+	for (auto& enemy_base : enemy_shipyard_or_dropoff_positions)
 		positions_to_block_scores[enemy_base] = position_to_block_on_enemy_base(enemy_base, game);
 
 	log::log("Block Enemy bases");

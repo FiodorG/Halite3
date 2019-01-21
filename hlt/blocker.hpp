@@ -23,8 +23,9 @@ namespace hlt
 	{
 	public:
 		unordered_map<Position, unordered_map<Position, double>> positions_to_block_scores;
+		PlayerId player_to_block;
 
-		Blocker() {};
+		Blocker() : player_to_block(0) {};
 
 		void fill_positions_to_block_scores(const Game& game);
 		unordered_map<Position, double> position_to_block_on_enemy_base(const Position& enemy_base, const Game& game) const;
