@@ -461,7 +461,7 @@ Objective hlt::Scorer::find_best_objective_cell_2p(shared_ptr<Ship> ship, const 
 	int max_i = 0, max_j = 0;
 	int turns_remaining = game.turns_remaining();
 	Objective_Type max_type = Objective_Type::EXTRACT_ZONE;
-	bool can_attack = (ship->halite < 500) && (game.halite_on_position(ship->position) < 500);
+	bool can_attack = (ship->halite < 500) && (game.halite_on_position(ship->position) < 400);
 
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
