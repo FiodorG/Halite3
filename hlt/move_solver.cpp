@@ -25,7 +25,7 @@ double MoveSolver::score_path(shared_ptr<Ship> ship, const vector<Direction>& pa
 	bool can_attack = can_attack_4p; // || can_attack_2p;
 	int turn = 0;
 	double score = 0.0;
-	double discount = 0.8;
+	double discount = 0.9;
 
 	unordered_map<Position, int> visited_positions;
 

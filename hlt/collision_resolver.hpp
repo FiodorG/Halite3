@@ -35,6 +35,9 @@ namespace hlt
 
 		// Resolve when one ship is escaping
 		bool collision_one_ship_escaping(vector<shared_ptr<Ship>> collisions_ordered, Game& game);
-		void resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game);
+		bool resolve_collisions_one_ship_escaping(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game);
+
+		bool collision_one_ship_rtb(vector<shared_ptr<Ship>> collisions_ordered, Game& game);
+		bool resolve_collisions_one_ship_rtb(unordered_map<shared_ptr<Ship>, Position> collisions, vector<shared_ptr<Ship>> collisions_ordered, Game& game);
 	};
 }
